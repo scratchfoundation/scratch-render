@@ -1,5 +1,5 @@
 
-importScripts('./render-webgl-worker.js');
+importScripts('../build/render-webgl-worker.js');
 
 var renderer;
 var drawableID;
