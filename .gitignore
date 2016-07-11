@@ -1,6 +1,5 @@
 /scratch-render-webgl.iml
-.idea/workspace.xml
-.idea/dictionaries
+.idea
 /node_modules
 /build/render-webgl.js
 /build/render-webgl.js.map
