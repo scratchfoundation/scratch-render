@@ -67,8 +67,10 @@
 
     canvas.onclick = function(event) {
         var mousePos = getMousePos(event, canvas);
-        var pickID = renderer.pick(mousePos.x, mousePos.y);
-        console.log('You clicked on ' + (pickID < 0 ? 'nothing' : 'ID# ' + pickID));
+        var pickPromise = renderer.pick(mousePos.x, mousePos.y);
+        pickPromise.then(function(pickID) {
+            console.log('You clicked on ' + (pickID < 0 ? 'nothing' : 'ID# ' + pickID));
+        });
     };
 
     function drawStep() {
