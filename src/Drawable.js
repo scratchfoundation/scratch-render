@@ -62,6 +62,7 @@ class Drawable {
         this._scale = 100;
         this._direction = 90;
         this._transformDirty = true;
+        this._visible = true;
         this._effectBits = 0;
 
         // Create a transparent 1x1 texture for temporary use
@@ -293,6 +294,14 @@ Drawable.prototype.getUniforms = function () {
 };
 
 /**
+ * Retrieve whether this Drawable is visible.
+ * @returns {boolean}
+ */
+Drawable.prototype.getVisible = function () {
+    return this._visible;
+};
+
+/**
  * Update the position, direction, scale, or effect properties of this Drawable.
  * @param {Object.<string,*>} properties The new property values to set.
  */
@@ -315,6 +324,9 @@ Drawable.prototype.updateProperties = function (properties) {
     if ('scale' in properties && this._scale != properties.scale) {
         this._scale = properties.scale;
         dirty = true;
+    }
+    if ('visible' in properties && this._visible != properties.visible) {
+        this._visible = properties.visible;
     }
     if (dirty) {
         this.setTransformDirty();
