@@ -325,7 +325,7 @@ Drawable.prototype.updateProperties = function (properties) {
         this._scale = properties.scale;
         dirty = true;
     }
-    if ('visible' in properties && this._visible != properties.visible) {
+    if ('visible' in properties) {
         this._visible = properties.visible;
     }
     if (dirty) {
