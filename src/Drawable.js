@@ -230,6 +230,9 @@ Drawable.prototype._setSkinSVG = function (skin_md5ext) {
         'https://cdn.assets.scratch.mit.edu/internalapi/asset/' +
         skin_md5ext +
         '/get/';
+    if (skin_md5ext == 'scratch_cat.svg') {
+        url = '/src/' + skin_md5ext;
+    }
     var instance = this;
     function gotSVG(err, response, body) {
         if (!err) {
