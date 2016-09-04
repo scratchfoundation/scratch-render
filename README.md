@@ -1,9 +1,9 @@
 ## scratch-render
 #### WebGL-based rendering engine for Scratch 3.0
 
-[![Build Status](https://travis-ci.org/LLK/scratch-render.svg?branch=develop)](https://travis-ci.org/LLK/scratch-render)
-[![Dependency Status](https://david-dm.org/LLK/scratch-render.svg)](https://david-dm.org/LLK/scratch-render)
-[![devDependency Status](https://david-dm.org/LLK/scratch-render/dev-status.svg)](https://david-dm.org/LLK/scratch-render#info=devDependencies)
+[![Build Status](https://travis-ci.org/TheBrokenRail/scratch-render.svg?branch=develop)](https://travis-ci.org/LLK/scratch-render)
+[![Dependency Status](https://david-dm.org/TheBrokenRail/scratch-render.svg)](https://david-dm.org/LLK/scratch-render)
+[![devDependency Status](https://david-dm.org/TheBrokenRail/scratch-render/dev-status.svg)](https://david-dm.org/LLK/scratch-render#info=devDependencies)
 
 ## Installation
 ```bash
