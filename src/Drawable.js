@@ -211,6 +211,9 @@ Drawable.prototype._setSkinBitmap = function (skin_md5ext) {
         'https://cdn.assets.scratch.mit.edu/internalapi/asset/' +
         skin_md5ext +
         '/get/';
+    if (skin_md5ext == 'Stage.png') {
+        url = '/src/' + skin_md5ext;
+    }
     this._setSkinCore(url, 2);
 };
 
