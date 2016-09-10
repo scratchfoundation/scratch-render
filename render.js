@@ -19225,10 +19225,10 @@
 
 	// TODO: fall back on a built-in skin to protect against network problems
 	Drawable._DEFAULT_SKIN = {
-	    squirrel: '7e24c99c1b853e52f8e7f9004416fa34.png',
-	    bus: '66895930177178ea01d9e610917f8acf.png',
-	    scratch_cat: '09dc888b0b7df19f70d81588ae73420e.svg',
-	    gradient: 'a49ff276b9b8f997a1ae163992c2c145.png'
+	    squirrel: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/7e24c99c1b853e52f8e7f9004416fa34.png/get/',
+	    bus: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/66895930177178ea01d9e610917f8acf.png/get/',
+	    scratch_cat: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/09dc888b0b7df19f70d81588ae73420e.svg/get/',
+	    gradient: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/a49ff276b9b8f997a1ae163992c2c145.png/get/'
 	}.squirrel;
 
 	/**
@@ -19317,10 +19317,7 @@
 	 * @private
 	 */
 	Drawable.prototype._setSkinBitmap = function (skin_md5ext) {
-	    var url = 'https://cdn.assets.scratch.mit.edu/internalapi/asset/' + skin_md5ext + '/get/';
-	    if (skin_md5ext == 'Stage.png') {
-	        url = '/src/' + skin_md5ext;
-	    }
+	    var url = skin_md5ext;
 	    this._setSkinCore(url, 2);
 	};
 
@@ -19336,10 +19333,7 @@
 	 * @private
 	 */
 	Drawable.prototype._setSkinSVG = function (skin_md5ext) {
-	    var url = 'https://cdn.assets.scratch.mit.edu/internalapi/asset/' + skin_md5ext + '/get/';
-	    if (skin_md5ext == 'scratch_cat.svg') {
-	        url = '/src/' + skin_md5ext;
-	    }
+	    var url = skin_md5ext;
 	    var instance = this;
 	    function gotSVG(err, response, body) {
 	        if (!err) {
