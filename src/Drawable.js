@@ -113,11 +113,15 @@ Drawable.getDrawableByID = function (drawableID) {
 
 // TODO: fall back on a built-in skin to protect against network problems
 Drawable._DEFAULT_SKIN = {
-    squirrel: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/7e24c99c1b853e52f8e7f9004416fa34.png/get/',
-    bus: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/66895930177178ea01d9e610917f8acf.png/get/',
-    scratch_cat: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/09dc888b0b7df19f70d81588ae73420e.svg/get/',
-    gradient: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/a49ff276b9b8f997a1ae163992c2c145.png/get/'
-}.squirrel;
+    squirrel: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/\
+        7e24c99c1b853e52f8e7f9004416fa34.png/get/',
+    bus: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/\
+        66895930177178ea01d9e610917f8acf.png/get/',
+    scratch_cat: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/\
+        09dc888b0b7df19f70d81588ae73420e.svg/get/',
+    gradient: 'https://cdn.assets.scratch.mit.edu/internalapi/asset/\
+        a49ff276b9b8f997a1ae163992c2c145.png/get/'
+}.scratch_cat;
 
 /**
  * Dispose of this Drawable. Do not use it after calling this method.
