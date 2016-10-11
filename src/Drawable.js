@@ -385,7 +385,7 @@ Drawable.prototype._setSkinSize = function (width, height, costumeResolution) {
  * @return {Array.<number>} Skin size, width and height.
  */
 Drawable.prototype.getSkinSize = function () {
-    return this._uniforms.u_skinSize;
+    return this._uniforms.u_skinSize.slice();
 };
 
 /**
