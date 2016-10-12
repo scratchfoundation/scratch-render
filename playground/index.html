@@ -9,7 +9,6 @@
     </style>
 </head>
 <body style="background: lightsteelblue">
-<canvas id="debug-canvas" width="10" height="10" style="border:3px dashed red"></canvas>
 <canvas id="scratch-stage" width="10" height="10" style="border:3px dashed black"></canvas>
 <p>
     <select id="fudgeproperty" onchange="onFudgePropertyChanged(this.value)">
@@ -38,11 +37,20 @@
     var fudge = 90;
     var renderer = new RenderWebGL(canvas);
 
+    var exampleCanvas = document.createElement('canvas');
+    exampleCanvas.width = 100;
+    exampleCanvas.height = 100;
+    var exampleContext = exampleCanvas.getContext('2d');
+    exampleContext.fillStyle = '#FF0000';
+    exampleContext.rect(0, 0, 100, 100);
+    exampleContext.fill();
+
     var drawableID = renderer.createDrawable();
     renderer.updateDrawableProperties(drawableID, {
         position: [0, 0],
         scale: [100, 100],
-        direction: 90
+        direction: 90,
+        skin: exampleCanvas
     });
     var drawableID2 = renderer.createDrawable();
     renderer.updateDrawableProperties(drawableID2, {
@@ -83,7 +91,7 @@
             case 'brightness': props.brightness = fudge; break;
             case 'ghost': props.ghost = fudge; break;
         }
-        renderer.updateDrawableProperties(drawableID2, props);
+        renderer.updateDrawableProperties(drawableID, props);
     }
 
     // Adapted from code by Simon Sarris: http://stackoverflow.com/a/10450761
@@ -128,8 +136,17 @@
     };
 
     function drawStep() {
+        // Fill canvas with a random color.
+        exampleContext.fillStyle = '#' + ('00000'+(Math.random()*(1<<24)|0).toString(16)).slice(-6);
+        exampleContext.rect(0, 0, 100, 100);
+        exampleContext.fill();
+        exampleContext.font = "48px sans";
+        exampleContext.fillStyle = '#FFFFFF';
+        exampleContext.fillText('test', 0, 50);
+        renderer.updateDrawableProperties(drawableID, {
+            skin: exampleCanvas
+        });
         renderer.draw();
-        renderer.getBounds(drawableID2);
         requestAnimationFrame(drawStep);
     }
     drawStep();
