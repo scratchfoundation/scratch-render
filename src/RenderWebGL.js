@@ -626,7 +626,7 @@ RenderWebGL.prototype._drawThese = function(
  * @param {string} text A text for render
  */
 
- RenderWebGL.prototype.renderBubble = function (drawableID, text) {
+RenderWebGL.prototype.renderBubble = function (drawableID, text) {
     var  drawable = Drawable.getDrawableByID(drawableID)
         ,bounds = drawable.getBounds()
         ,xy = {x: bounds.right + 5,
@@ -649,7 +649,7 @@ RenderWebGL.prototype._drawThese = function(
     // Draw text
     ctx.font = h + 'px' + ' ' + 'sans-serif';
     text.split('\n').forEach(function(line){
-        ctx.fillText(frag, 2, col*(h+1) + 2);
+        ctx.fillText(line, 2, col*(h+1) + 2);
         ++col;
     });
     canvas.height = col * (h+1)  + 3;
