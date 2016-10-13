@@ -671,6 +671,7 @@ RenderWebGL.prototype.renderBubble = function (drawableID, text) {
         position: [xy.x, xy.y],
         skin: canvas.toDataURL()
     });
+    return newDrawableId;
 };
 
 /**
