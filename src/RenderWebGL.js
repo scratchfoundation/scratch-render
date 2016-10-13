@@ -651,7 +651,7 @@ RenderWebGL.prototype._drawThese = function(
     text.split('\n').forEach(function(line){
         ctx.fillText(frag, 2, col*(h+1) + 2);
         ++col;
-    };
+    });
     canvas.height = col * (h+1)  + 3;
 
     // Draw bubble
