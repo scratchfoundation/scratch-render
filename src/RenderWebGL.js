@@ -628,9 +628,9 @@ RenderWebGL.prototype._drawThese = function(
 
  RenderWebGL.prototype.renderBubble = function (drawableID, text) {
     var  drawable = Drawable.getDrawableByID(drawableID)
-        ,bounds = drawable.getBounds();
+        ,bounds = drawable.getBounds()
         ,xy = {x: bounds.right + 5,
-               y: bounds.top} // A point for bubble render
+               y: bounds.top}; // A point for bubble render
 
     var canvas = typeof document !== "undefined" ?
                  document.createElement('canvas') : null,
