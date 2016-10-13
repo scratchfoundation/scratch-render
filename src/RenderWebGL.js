@@ -632,7 +632,7 @@ RenderWebGL.prototype.renderBubble = function (drawableID, text) {
         ,xy = {x: bounds.right + 5,
                y: bounds.top}; // A point for bubble render
 
-    var canvas = typeof document !== "undefined" ?
+    var canvas = typeof document !== 'undefined' ?
                  document.createElement('canvas') : null,
         ctx;
     if (!canvas) return; //throw new Error('Cannot create canvas!');
@@ -671,7 +671,7 @@ RenderWebGL.prototype.renderBubble = function (drawableID, text) {
         position: [xy.x, xy.y],
         skin: canvas.toDataURL()
     });
- };
+};
 
 /**
  * Get the convex hull points for a particular Drawable.
