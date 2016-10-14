@@ -639,16 +639,16 @@ RenderWebGL.prototype.renderBubble = function (drawableID, text) {
     if (!canvas) return; //throw new Error('Cannot create canvas!');
     ctx = canvas.getContext('2d');
 
-    var w = ctx.measureText(text).width,
-        h = 15, col = 0;
+
 
     // Global settings
+    ctx.font = h + 'px' + ' ' + 'sans-serif';
+    var w = ctx.measureText(text).width,
+        h = 15, col = 0;
     canvas.width = w;
-    canvas.height = 500; // Temporary
     ctx.fillStyle = '#000000';
 
     // Draw text
-    ctx.font = h + 'px' + ' ' + 'sans-serif';
     text.split('\n').forEach(function(line){
         ctx.fillText(line, 2, col*(h+1) + 2);
         ++col;
