@@ -156,28 +156,38 @@ Drawable.prototype.getID = function () {
  * Set this Drawable's skin.
  * The Drawable will continue using the existing skin until the new one loads.
  * If there is no existing skin, the Drawable will use a 1x1 transparent image.
- * @param {string} skin_url The URL of the skin.
+ * @param {string|HTMLElement} skin_ref The URL of the skin, or a canvas node.
  */
-Drawable.prototype.setSkin = function (skin_url) {
+Drawable.prototype.setSkin = function (skin_ref) {
     // TODO: cache Skins instead of loading each time. Ref count them?
     // TODO: share Skins across Drawables - see also destroy()
-    if (skin_url) {
-        var ext = skin_url.substring(skin_url.lastIndexOf('.')+1);
+    if (skin_ref.tagName && skin_ref.tagName == 'CANVAS') {
+        this.setCanvasSkin(skin_ref);
+    } else if (skin_ref) {
+        var ext = skin_ref.substring(skin_ref.lastIndexOf('.')+1);
         switch (ext) {
         case 'svg':
         case 'svg/get/':
         case 'svgz':
         case 'svgz/get/':
-            this._setSkinSVG(skin_url);
+            this._setSkinSVG(skin_ref);
             break;
         default:
-            this._setSkinBitmap(skin_url);
+            this._setSkinBitmap(skin_ref);
             break;
         }
     }
     else {
         this._useSkin(null, 0, 0, 1, true);
     }
+};
+
+/**
+ * Set the Drawable to have a Canvas skin.
+ * @param {HTMLElement} canvas Canvas DOM node.
+ */
+Drawable.prototype.setCanvasSkin = function (canvas) {
+    this._setSkinCore(canvas, 2);
 };
 
 /**
