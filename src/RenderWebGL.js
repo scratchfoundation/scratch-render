@@ -261,11 +261,28 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
         return false;
     }
 
+    // Filter candidates by rough bounding box intersection.
+    // Do this before _drawThese, so we can prevent any GL operations
+    // and readback by returning early.
+    const candidateIDs = this._drawables.filter(function (testID) {
+        if (testID == drawableID) return false;
+        // Only draw items which could possibly overlap target Drawable.
+        let candidate = Drawable.getDrawableByID(testID);
+        let candidateBounds = candidate.getFastBounds();
+        return bounds.intersects(candidateBounds);
+    });
+
+    if (candidateIDs.length == 0) {
+        // No possible intersections based on bounding boxes.
+        return false;
+    }
+
     // Limit size of viewport to the bounds around the target Drawable,
     // and create the projection matrix for the draw.
     gl.viewport(0, 0, bounds.width, bounds.height);
-    let projection = twgl.m4.ortho(
+    const projection = twgl.m4.ortho(
         bounds.left, bounds.right, bounds.bottom, bounds.top, -1, 1);
+
     gl.clearColor.apply(gl, this._backgroundColor);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
@@ -298,11 +315,7 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
         this._drawThese(
             this._drawables, ShaderManager.DRAW_MODE.default, projection,
             function (testID) {
-                if (testID == drawableID) return false;
-                // Only draw items which could possibly overlap target Drawable.
-                let candidate = Drawable.getDrawableByID(testID);
-                let candidateBounds = candidate.getFastBounds();
-                return bounds.intersects(candidateBounds);
+                return testID != drawableID;
             });
     }
     finally {
@@ -355,11 +368,42 @@ RenderWebGL.prototype.isTouchingDrawables = function(drawableID, candidateIDs) {
 
     twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-    // TODO: restrict to only the area overlapped by the target Drawable
-    // - limit size of viewport to the AABB around the target Drawable
-    // - draw only the Drawables which could overlap the target Drawable
-    // - read only the pixels in the AABB around the target Drawable
-    gl.viewport(0, 0, this._nativeSize[0], this._nativeSize[1]);
+    const drawable = Drawable.getDrawableByID(drawableID);
+    const bounds = drawable.getFastBounds();
+
+    // Limit queries to the stage size.
+    bounds.clamp(this._xLeft, this._xRight, this._yBottom, this._yTop);
+
+    // Use integer coordinates for queries - weird things happen
+    // when you provide float width/heights to gl.viewport and projection.
+    bounds.ceil();
+
+    if (bounds.width == 0 || bounds.height == 0) {
+        // No space to query.
+        return false;
+    }
+
+    // Filter candidates by rough bounding box intersection.
+    // Do this before _drawThese, so we can prevent any GL operations
+    // and readback by returning early.
+    candidateIDs = candidateIDs.filter(function (testID) {
+        if (testID == drawableID) return false;
+        // Only draw items which could possibly overlap target Drawable.
+        let candidate = Drawable.getDrawableByID(testID);
+        let candidateBounds = candidate.getFastBounds();
+        return bounds.intersects(candidateBounds);
+    });
+
+    if (candidateIDs.length == 0) {
+        // No possible intersections based on bounding boxes.
+        return false;
+    }
+
+    // Limit size of viewport to the bounds around the target Drawable,
+    // and create the projection matrix for the draw.
+    gl.viewport(0, 0, bounds.width, bounds.height);
+    const projection = twgl.m4.ortho(
+        bounds.left, bounds.right, bounds.bottom, bounds.top, -1, 1);
 
     const noneColor = Drawable.color4fFromID(Drawable.NONE);
     gl.clearColor.apply(gl, noneColor);
@@ -371,34 +415,35 @@ RenderWebGL.prototype.isTouchingDrawables = function(drawableID, candidateIDs) {
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
         gl.colorMask(false, false, false, false);
         this._drawThese(
-            [drawableID], ShaderManager.DRAW_MODE.silhouette, this._projection
+            [drawableID], ShaderManager.DRAW_MODE.silhouette, projection
         );
 
         gl.stencilFunc(gl.EQUAL, 1, 1);
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
         gl.colorMask(true, true, true, true);
 
-        // TODO: only draw items which could possibly overlap target Drawable
-        // It might work to use the filter function for that
         this._drawThese(
-            candidateIDs, ShaderManager.DRAW_MODE.silhouette, this._projection
+            candidateIDs, ShaderManager.DRAW_MODE.silhouette, projection,
+            function (testID) {
+                return testID != drawableID;
+            }
         );
     } finally {
         gl.colorMask(true, true, true, true);
         gl.disable(gl.STENCIL_TEST);
     }
 
-    let pixels = new Buffer(this._nativeSize[0] * this._nativeSize[1] * 4);
+    let pixels = new Buffer(bounds.width * bounds.height * 4);
     gl.readPixels(
-        0, 0, this._nativeSize[0], this._nativeSize[1],
+        0, 0, bounds.width, bounds.height,
         gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 
     if (this._debugCanvas) {
-        this._debugCanvas.width = this._nativeSize[0];
-        this._debugCanvas.height = this._nativeSize[1];
+        this._debugCanvas.width = bounds.width;
+        this._debugCanvas.height = bounds.height;
         const context = this._debugCanvas.getContext('2d');
         let imageData = context.getImageData(
-            0, 0, this._nativeSize[0], this._nativeSize[1]);
+            0, 0, bounds.width, bounds.height);
         for (let i = 0, bytes = pixels.length; i < bytes; ++i) {
             imageData.data[i] = pixels[i];
         }
