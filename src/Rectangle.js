@@ -90,6 +90,25 @@ class Rectangle {
     }
 
     /**
+     * Clamp a Rectangle to bounds.
+     * @param {number} left Left clamp.
+     * @param {number} right Right clamp.
+     * @param {number} bottom Bottom clamp.
+     * @param {number} top Top clamp.
+     */
+    clamp (left, right, bottom, top) {
+        this.left = Math.max(this.left, left);
+        this.right = Math.min(this.right, right);
+        this.bottom = Math.max(this.bottom, bottom);
+        this.top = Math.min(this.top, top);
+        // Ensure rectangle coordinates in order.
+        this.left = Math.min(this.left, this.right);
+        this.right = Math.max(this.right, this.left);
+        this.bottom = Math.min(this.bottom, this.top);
+        this.top = Math.max(this.top, this.bottom);
+    }
+
+    /**
      * Width of the Rectangle.
      * @return {number} Width of rectangle.
      */
