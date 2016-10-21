@@ -2,6 +2,7 @@ var twgl = require('twgl.js');
 var svgToImage = require('svg-to-image');
 var xhr = require('xhr');
 
+var Rectangle = require('./Rectangle');
 var ShaderManager = require('./ShaderManager');
 
 class Drawable {
@@ -488,28 +489,8 @@ Drawable.prototype.getBounds = function () {
         transformedHullPoints.push(glPoint);
     }
     // Search through transformed points to generate box on axes.
-    let bounds = {
-        left: Infinity,
-        right: -Infinity,
-        top: -Infinity,
-        bottom: Infinity
-    };
-    for (let i = 0; i < transformedHullPoints.length; i++) {
-        let x = transformedHullPoints[i][0];
-        let y = transformedHullPoints[i][1];
-        if (x < bounds.left) {
-            bounds.left = x;
-        }
-        if (x > bounds.right) {
-            bounds.right = x;
-        }
-        if (y > bounds.top) {
-            bounds.top = y;
-        }
-        if (y < bounds.bottom) {
-            bounds.bottom = y;
-        }
-    }
+    let bounds = new Rectangle();
+    bounds.initFromPointsAABB(transformedHullPoints);
     return bounds;
 };
 
