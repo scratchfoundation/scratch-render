@@ -88,6 +88,22 @@ class Rectangle {
             other.bottom > this.bottom
         );
     }
+
+    /**
+     * Width of the Rectangle.
+     * @return {number} Width of rectangle.
+     */
+    get width () {
+        return Math.abs(this.left - this.right);
+    }
+
+    /**
+     * Height of the Rectangle.
+     * @return {number} Height of rectangle.
+     */
+    get height () {
+        return Math.abs(this.top - this.bottom);
+    }
 }
 
 module.exports = Rectangle;
