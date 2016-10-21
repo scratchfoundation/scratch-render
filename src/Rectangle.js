@@ -109,6 +109,16 @@ class Rectangle {
     }
 
     /**
+     * Push out the Rectangle to integer bounds.
+     */
+    ceil() {
+        this.left = Math.floor(this.left);
+        this.right = Math.ceil(this.right);
+        this.bottom = Math.floor(this.bottom);
+        this.top = Math.ceil(this.top);
+    }
+
+    /**
      * Width of the Rectangle.
      * @return {number} Width of rectangle.
      */

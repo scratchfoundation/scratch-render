@@ -243,17 +243,29 @@ RenderWebGL.prototype.getSkinSize = function (drawableID) {
  * @returns {Boolean} True iff the Drawable is touching the color.
  */
 RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
-
-    var gl = this._gl;
-
+    const gl = this._gl;
     twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-    // TODO: restrict to only the area overlapped by the target Drawable
-    // - limit size of viewport to the AABB around the target Drawable
-    // - draw only the Drawables which could overlap the target Drawable
-    // - read only the pixels in the AABB around the target Drawable
-    gl.viewport(0, 0, this._nativeSize[0], this._nativeSize[1]);
+    const drawable = Drawable.getDrawableByID(drawableID);
+    const bounds = drawable.getFastBounds();
 
+    // Limit queries to the stage size.
+    bounds.clamp(this._xLeft, this._xRight, this._yBottom, this._yTop);
+
+    // Use integer coordinates for queries - weird things happen
+    // when you provide float width/heights to gl.viewport and projection.
+    bounds.ceil();
+
+    if (bounds.width == 0 || bounds.height == 0) {
+        // No space to query.
+        return false;
+    }
+
+    // Limit size of viewport to the bounds around the target Drawable,
+    // and create the projection matrix for the draw.
+    gl.viewport(0, 0, bounds.width, bounds.height);
+    let projection = twgl.m4.ortho(
+        bounds.left, bounds.right, bounds.bottom, bounds.top, -1, 1);
     gl.clearColor.apply(gl, this._backgroundColor);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
 
@@ -275,7 +287,7 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
             mask3b ?
                 ShaderManager.DRAW_MODE.colorMask :
                 ShaderManager.DRAW_MODE.silhouette,
-            this._projection,
+            projection,
             undefined,
             extraUniforms);
 
@@ -283,12 +295,14 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
         gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
         gl.colorMask(true, true, true, true);
 
-        // TODO: only draw items which could possibly overlap target Drawable
-        // It might work to use the filter function for that
         this._drawThese(
-            this._drawables, ShaderManager.DRAW_MODE.default, this._projection,
+            this._drawables, ShaderManager.DRAW_MODE.default, projection,
             function (testID) {
-                return testID != drawableID;
+                if (testID == drawableID) return false;
+                // Only draw items which could possibly overlap target Drawable.
+                let candidate = Drawable.getDrawableByID(testID);
+                let candidateBounds = candidate.getFastBounds();
+                return bounds.intersects(candidateBounds);
             });
     }
     finally {
@@ -296,17 +310,17 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
         gl.disable(gl.STENCIL_TEST);
     }
 
-    var pixels = new Buffer(this._nativeSize[0] * this._nativeSize[1] * 4);
+    var pixels = new Buffer(bounds.width * bounds.height * 4);
     gl.readPixels(
-        0, 0, this._nativeSize[0], this._nativeSize[1],
+        0, 0, bounds.width, bounds.height,
         gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 
     if (this._debugCanvas) {
-        this._debugCanvas.width = this._nativeSize[0];
-        this._debugCanvas.height = this._nativeSize[1];
+        this._debugCanvas.width = bounds.width;
+        this._debugCanvas.height = bounds.height;
         var context = this._debugCanvas.getContext('2d');
         var imageData = context.getImageData(
-            0, 0, this._nativeSize[0], this._nativeSize[1]);
+            0, 0, bounds.width, bounds.height);
         for (var i = 0, bytes = pixels.length; i < bytes; ++i) {
             imageData.data[i] = pixels[i];
         }
