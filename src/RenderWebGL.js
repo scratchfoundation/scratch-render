@@ -246,12 +246,16 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
     const gl = this._gl;
     twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-    let queryCandidates = this._touchingQueryCandidates(
-        drawableID, this._drawables);
-    if (!queryCandidates) {
+    let bounds = this._touchingBounds(drawableID);
+    if (!bounds) {
         return;
     }
-    let [bounds, candidateIDs] = queryCandidates;
+    let candidateIDs = this._filterCandidatesTouching(
+        drawableID, this._drawables, bounds);
+    if (!candidateIDs) {
+        return;
+    }
+
 
     // Limit size of viewport to the bounds around the target Drawable,
     // and create the projection matrix for the draw.
@@ -344,13 +348,15 @@ RenderWebGL.prototype.isTouchingDrawables = function(drawableID, candidateIDs) {
 
     twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-    let bounds;
-    let queryCandidates = this._touchingQueryCandidates(
-        drawableID, candidateIDs);
-    if (!queryCandidates) {
+    let bounds = this._touchingBounds(drawableID);
+    if (!bounds) {
         return;
     }
-    [bounds, candidateIDs] = queryCandidates;
+    candidateIDs = this._filterCandidatesTouching(
+        drawableID, candidateIDs, bounds);
+    if (!candidateIDs) {
+        return;
+    }
 
     // Limit size of viewport to the bounds around the target Drawable,
     // and create the projection matrix for the draw.
@@ -513,15 +519,11 @@ RenderWebGL.prototype.pick = function (
 };
 
 /**
- * Get the candidate bounding box and Drawable candidates for a touching query.
- * Filters `candidateIDs` to only include those that could possibly
- * intersect the `drawableID`, and gives the minimum query bounding box.
- * @param {int} drawableID ID for drawable to query.
- * @param {Array.<int>} candidateIDs IDs for potentially touching candidates.
- * @return {?Array.<object>} Rectangle bounds and a list of candidates, or null.
+ * Get the candidate bounding box for a touching query.
+ * @param {int} drawableID ID for drawable of query.
+ * @return {?Rectangle} Rectangle bounds for touching query, or null.
  */
-RenderWebGL.prototype._touchingQueryCandidates = function (
-    drawableID, candidateIDs) {
+RenderWebGL.prototype._touchingBounds = function (drawableID) {
     const drawable = Drawable.getDrawableByID(drawableID);
     const bounds = drawable.getFastBounds();
 
@@ -536,7 +538,19 @@ RenderWebGL.prototype._touchingQueryCandidates = function (
         // No space to query.
         return null;
     }
+    return bounds;
+};
 
+/**
+ * Filter a list of candidates for a touching query into only those that
+ * could possibly intersect the given bounds.
+ * @param {int} drawableID ID for drawable of query.
+ * @param {Array.<int>} candidateIDs Candidates for touching query.
+ * @param {Rectangle} Bounds to limit candidates to.
+ * @return {?Array.<int>} Filtered candidateIDs, or null if none.
+ */
+RenderWebGL.prototype._filterCandidatesTouching = function (
+    drawableID, candidateIDs, bounds) {
     // Filter candidates by rough bounding box intersection.
     // Do this before _drawThese, so we can prevent any GL operations
     // and readback by returning early.
@@ -547,13 +561,11 @@ RenderWebGL.prototype._touchingQueryCandidates = function (
         let candidateBounds = candidate.getFastBounds();
         return bounds.intersects(candidateBounds);
     });
-
     if (candidateIDs.length == 0) {
         // No possible intersections based on bounding boxes.
         return null;
     }
-
-    return [bounds, candidateIDs];
+    return candidateIDs;
 };
 
 /**
