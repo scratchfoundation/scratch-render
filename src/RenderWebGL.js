@@ -254,7 +254,7 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
 
     // Use integer coordinates for queries - weird things happen
     // when you provide float width/heights to gl.viewport and projection.
-    bounds.ceil();
+    bounds.snapToInt();
 
     if (bounds.width == 0 || bounds.height == 0) {
         // No space to query.
@@ -376,7 +376,7 @@ RenderWebGL.prototype.isTouchingDrawables = function(drawableID, candidateIDs) {
 
     // Use integer coordinates for queries - weird things happen
     // when you provide float width/heights to gl.viewport and projection.
-    bounds.ceil();
+    bounds.snapToInt();
 
     if (bounds.width == 0 || bounds.height == 0) {
         // No space to query.

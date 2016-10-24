@@ -111,7 +111,7 @@ class Rectangle {
     /**
      * Push out the Rectangle to integer bounds.
      */
-    ceil() {
+    snapToInt() {
         this.left = Math.floor(this.left);
         this.right = Math.ceil(this.right);
         this.bottom = Math.floor(this.bottom);
