@@ -246,36 +246,12 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
     const gl = this._gl;
     twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-    const drawable = Drawable.getDrawableByID(drawableID);
-    const bounds = drawable.getFastBounds();
-
-    // Limit queries to the stage size.
-    bounds.clamp(this._xLeft, this._xRight, this._yBottom, this._yTop);
-
-    // Use integer coordinates for queries - weird things happen
-    // when you provide float width/heights to gl.viewport and projection.
-    bounds.snapToInt();
-
-    if (bounds.width == 0 || bounds.height == 0) {
-        // No space to query.
-        return false;
+    let queryCandidates = this._touchingQueryCandidates(
+        drawableID, this._drawables);
+    if (!queryCandidates) {
+        return;
     }
-
-    // Filter candidates by rough bounding box intersection.
-    // Do this before _drawThese, so we can prevent any GL operations
-    // and readback by returning early.
-    const candidateIDs = this._drawables.filter(function (testID) {
-        if (testID == drawableID) return false;
-        // Only draw items which could possibly overlap target Drawable.
-        let candidate = Drawable.getDrawableByID(testID);
-        let candidateBounds = candidate.getFastBounds();
-        return bounds.intersects(candidateBounds);
-    });
-
-    if (candidateIDs.length == 0) {
-        // No possible intersections based on bounding boxes.
-        return false;
-    }
+    let [bounds, candidateIDs] = queryCandidates;
 
     // Limit size of viewport to the bounds around the target Drawable,
     // and create the projection matrix for the draw.
@@ -313,7 +289,7 @@ RenderWebGL.prototype.isTouchingColor = function(drawableID, color3b, mask3b) {
         gl.colorMask(true, true, true, true);
 
         this._drawThese(
-            this._drawables, ShaderManager.DRAW_MODE.default, projection,
+            candidateIDs, ShaderManager.DRAW_MODE.default, projection,
             function (testID) {
                 return testID != drawableID;
             });
@@ -368,36 +344,13 @@ RenderWebGL.prototype.isTouchingDrawables = function(drawableID, candidateIDs) {
 
     twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-    const drawable = Drawable.getDrawableByID(drawableID);
-    const bounds = drawable.getFastBounds();
-
-    // Limit queries to the stage size.
-    bounds.clamp(this._xLeft, this._xRight, this._yBottom, this._yTop);
-
-    // Use integer coordinates for queries - weird things happen
-    // when you provide float width/heights to gl.viewport and projection.
-    bounds.snapToInt();
-
-    if (bounds.width == 0 || bounds.height == 0) {
-        // No space to query.
-        return false;
+    let bounds;
+    let queryCandidates = this._touchingQueryCandidates(
+        drawableID, candidateIDs);
+    if (!queryCandidates) {
+        return;
     }
-
-    // Filter candidates by rough bounding box intersection.
-    // Do this before _drawThese, so we can prevent any GL operations
-    // and readback by returning early.
-    candidateIDs = candidateIDs.filter(function (testID) {
-        if (testID == drawableID) return false;
-        // Only draw items which could possibly overlap target Drawable.
-        let candidate = Drawable.getDrawableByID(testID);
-        let candidateBounds = candidate.getFastBounds();
-        return bounds.intersects(candidateBounds);
-    });
-
-    if (candidateIDs.length == 0) {
-        // No possible intersections based on bounding boxes.
-        return false;
-    }
+    [bounds, candidateIDs] = queryCandidates;
 
     // Limit size of viewport to the bounds around the target Drawable,
     // and create the projection matrix for the draw.
@@ -557,6 +510,50 @@ RenderWebGL.prototype.pick = function (
     }
 
     return hit | 0;
+};
+
+/**
+ * Get the candidate bounding box and Drawable candidates for a touching query.
+ * Filters `candidateIDs` to only include those that could possibly
+ * intersect the `drawableID`, and gives the minimum query bounding box.
+ * @param {int} drawableID ID for drawable to query.
+ * @param {Array.<int>} candidateIDs IDs for potentially touching candidates.
+ * @return {?Array.<object>} Rectangle bounds and a list of candidates, or null.
+ */
+RenderWebGL.prototype._touchingQueryCandidates = function (
+    drawableID, candidateIDs) {
+    const drawable = Drawable.getDrawableByID(drawableID);
+    const bounds = drawable.getFastBounds();
+
+    // Limit queries to the stage size.
+    bounds.clamp(this._xLeft, this._xRight, this._yBottom, this._yTop);
+
+    // Use integer coordinates for queries - weird things happen
+    // when you provide float width/heights to gl.viewport and projection.
+    bounds.snapToInt();
+
+    if (bounds.width == 0 || bounds.height == 0) {
+        // No space to query.
+        return null;
+    }
+
+    // Filter candidates by rough bounding box intersection.
+    // Do this before _drawThese, so we can prevent any GL operations
+    // and readback by returning early.
+    candidateIDs = candidateIDs.filter(function (testID) {
+        if (testID == drawableID) return false;
+        // Only draw items which could possibly overlap target Drawable.
+        let candidate = Drawable.getDrawableByID(testID);
+        let candidateBounds = candidate.getFastBounds();
+        return bounds.intersects(candidateBounds);
+    });
+
+    if (candidateIDs.length == 0) {
+        // No possible intersections based on bounding boxes.
+        return null;
+    }
+
+    return [bounds, candidateIDs];
 };
 
 /**
