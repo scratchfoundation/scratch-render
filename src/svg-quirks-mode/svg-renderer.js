@@ -92,11 +92,17 @@ class SvgRenderer {
             // Set text-before-edge alignment:
             // Scratch renders all text like this.
             textElement.setAttribute('alignment-baseline', 'text-before-edge');
+            // If there's no font size provided, provide one.
+            if (!textElement.getAttribute('font-size')) {
+                textElement.setAttribute('font-size', '18');
+            }
+            // If there's no font-family provided, provide one.
+            if (!textElement.getAttribute('font-family')) {
+                textElement.setAttribute('font-family', 'Helvetica');
+            }
             // Collect fonts that need injection.
             let font = textElement.getAttribute('font-family');
-            if (font) {
-                fontsNeeded[font] = true;
-            }
+            fontsNeeded[font] = true;
             // Fix line breaks in text, which are not natively supported by SVG.
             let text = textElement.textContent;
             if (text) {
