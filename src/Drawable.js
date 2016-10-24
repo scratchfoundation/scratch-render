@@ -1,7 +1,7 @@
 var twgl = require('twgl.js');
-var svgToImage = require('svg-to-image');
 var xhr = require('xhr');
 
+var SvgRenderer = require('./svg-quirks-mode/svg-renderer');
 var ShaderManager = require('./ShaderManager');
 
 class Drawable {
@@ -238,14 +238,15 @@ Drawable.prototype._setSkinBitmap = function (skin_md5ext,
 Drawable.prototype._setSkinSVG = function (skin_md5ext) {
     var url = skin_md5ext;
     var instance = this;
+
+    let svgCanvas = document.createElement('canvas');
+    let svgRenderer = new SvgRenderer(svgCanvas);
+
     function gotSVG(err, response, body) {
         if (!err) {
-            svgToImage(body, gotImage);
-        }
-    }
-    function gotImage(err, image) {
-        if (!err) {
-            instance._setSkinCore(image, 1);
+            svgRenderer.fromString(body, function () {
+                instance._setSkinCore(svgCanvas, svgRenderer.getDrawRatio());
+            });
         }
     }
     xhr.get({
