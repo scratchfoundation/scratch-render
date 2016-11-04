@@ -161,11 +161,16 @@ class SvgRenderer {
         // which returns the full bounding-box of all drawn SVG
         // elements, similar to how Scratch 2.0 did measurement.
         let svgSpot = document.createElement('span');
-        document.body.appendChild(svgSpot);
-        svgSpot.appendChild(this._svgTag);
-        // Take the bounding box, and then destroy the element.
-        let bbox = this._svgTag.getBBox();
-        document.body.removeChild(svgSpot);
+        let bbox;
+        try {
+            document.body.appendChild(svgSpot);
+            svgSpot.appendChild(this._svgTag);
+            // Take the bounding box.
+            bbox = this._svgTag.getBBox();
+        } finally {
+            // Always destroy the element, even if, for example, getBBox throws.
+            document.body.removeChild(svgSpot);
+        }
 
         // Re-parse the SVG from `svgText`. The above DOM becomes
         // unusable/undrawable in browsers once it's appended to the page,
