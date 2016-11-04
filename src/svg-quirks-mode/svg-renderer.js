@@ -1,11 +1,11 @@
 // Synchronously load TTF fonts.
 // First, have Webpack load their data as Base 64 strings.
 let FONTS = {
-    'Donegal': require('base64!./fonts/DonegalOne-Regular.ttf'),
-    'Gloria': require('base64!./fonts/GloriaHallelujah.ttf'),
-    'Mystery': require('base64!./fonts/MysteryQuest-Regular.ttf'),
-    'Marker': require('base64!./fonts/PermanentMarker.ttf'),
-    'Scratch': require('base64!./fonts/Scratch.ttf')
+    'Donegal': require('base64!scratch-render-fonts/DonegalOne-Regular.ttf'),
+    'Gloria': require('base64!scratch-render-fonts/GloriaHallelujah.ttf'),
+    'Mystery': require('base64!scratch-render-fonts/MysteryQuest-Regular.ttf'),
+    'Marker': require('base64!scratch-render-fonts/PermanentMarker.ttf'),
+    'Scratch': require('base64!scratch-render-fonts/Scratch.ttf')
 };
 
 // For each Base 64 string,
