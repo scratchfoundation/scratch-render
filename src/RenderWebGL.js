@@ -685,6 +685,61 @@ RenderWebGL.prototype._drawThese = function (
 };
 
 /**
+ * Draw say bubble next to the Drawable
+ * @param {int} drawableID A Drawable ID for draw bubble to
+ * @param {string} text A text for render
+ */
+
+RenderWebGL.prototype.renderBubble = function (drawableID, text) {
+    var  drawable = Drawable.getDrawableByID(drawableID);
+    if (!drawable) return;
+    var bounds = drawable.getBounds(),
+        xy = {x: bounds.right + 5,
+              y: bounds.top}; // A point for bubble render
+
+    var canvas = typeof document !== 'undefined' ?
+                 document.createElement('canvas') : null,
+        ctx;
+    if (!canvas) return; //throw new Error('Cannot create canvas!');
+    ctx = canvas.getContext('2d');
+
+
+
+    // Global settings
+    ctx.font = h + 'px' + ' ' + 'sans-serif';
+    var w = ctx.measureText(text).width,
+        h = 15, col = 0;
+    canvas.width = w;
+    ctx.fillStyle = '#000000';
+
+    // Draw text
+    text.split('\n').forEach(function(line){
+        ctx.fillText(line, 2, col*(h+1) + 2);
+        ++col;
+    });
+    canvas.height = col * (h+1)  + 3;
+
+    // Draw bubble
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(w, 0);
+    ctx.lineTo(w, col*(h+1) + 2);
+    ctx.lineTo(2, col*(h+1) + 2);
+    ctx.lineTo(0, col*(h+1) + 3);
+    ctx.lineTo(0,0);
+    ctx.closePath();
+
+    // Done! Now push new drawable
+    var newDrawableId = this.createDrawable(),
+        newDrawable = Drawable.getDrawableByID(newDrawableId);
+    newDrawable.updateProperties({
+        position: [xy.x, xy.y],
+        skin: canvas.toDataURL()
+    });
+    return newDrawableId;
+};
+
+/**
  * Get the convex hull points for a particular Drawable.
  * To do this, draw the Drawable unrotated, unscaled, and untranslated.
  * Read back the pixels and find all boundary points.
