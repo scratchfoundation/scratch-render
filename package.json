@@ -40,7 +40,7 @@
     "travis-after-all": "1.4.4",
     "twgl.js": "2.8.2",
     "webpack": "2.2.1",
-    "webpack-dev-server": "1.16.3",
+    "webpack-dev-server": "2.4.0",
     "xhr": "2.3.3"
   }
 }
