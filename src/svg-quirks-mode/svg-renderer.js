@@ -52,7 +52,7 @@ class SvgRenderer {
      * This will be parsed and transformed, and finally drawn.
      * When drawing is finished, the `onFinish` callback is called.
      * @param {string} svgString String of SVG data to draw in quirks-mode.
-     * @param {Function=} onFinish Optional callback for when drawing finished.
+     * @param {Function} [onFinish] Optional callback for when drawing finished.
      */
     fromString (svgString, onFinish) {
         // Store the callback for later.
@@ -60,11 +60,11 @@ class SvgRenderer {
         // Parse string into SVG XML.
         const parser = new DOMParser();
         this._svgDom = parser.parseFromString(svgString, 'text/xml');
-        if (this._svgDom.children.length < 1 ||
-            this._svgDom.children[0].localName !== 'svg') {
+        if (this._svgDom.childNodes.length < 1 ||
+            this._svgDom.documentElement.localName !== 'svg') {
             throw new Error('Document does not appear to be SVG.');
         }
-        this._svgTag = this._svgDom.children[0];
+        this._svgTag = this._svgDom.documentElement;
         // Transform all text elements.
         this._transformText();
         // Transform measurements.
@@ -74,14 +74,14 @@ class SvgRenderer {
     }
 
     /**
-     * @return {[number,number]} the natural size, in Scratch units, of this SVG.
+     * @return {Array<number>} the natural size, in Scratch units, of this SVG.
      */
     get size () {
         return [this._measurements.width, this._measurements.height];
     }
 
     /**
-     * @return {[number,number]} the offset (upper left corner) of the SVG's view box.
+     * @return {Array<number>} the offset (upper left corner) of the SVG's view box.
      */
     get viewOffset () {
         return [this._measurements.x, this._measurements.y];
@@ -102,8 +102,8 @@ class SvgRenderer {
             if (domElement.localName === 'text') {
                 textElements.push(domElement);
             }
-            for (let i = 0; i < domElement.children.length; i++) {
-                collectText(domElement.children[i]);
+            for (let i = 0; i < domElement.childNodes.length; i++) {
+                collectText(domElement.childNodes[i]);
             }
         };
         collectText(this._svgTag);
@@ -159,7 +159,7 @@ class SvgRenderer {
             }
         }
         newDefs.appendChild(newStyle);
-        this._svgTag.insertBefore(newDefs, this._svgTag.children[0]);
+        this._svgTag.insertBefore(newDefs, this._svgTag.childNodes[0]);
     }
 
     /**
@@ -201,7 +201,7 @@ class SvgRenderer {
         // perhaps for security reasons?
         const parser = new DOMParser();
         this._svgDom = parser.parseFromString(svgText, 'text/xml');
-        this._svgTag = this._svgDom.children[0];
+        this._svgTag = this._svgDom.documentElement;
 
         // Set the correct measurements on the SVG tag, and save them.
         this._svgTag.setAttribute('width', bbox.width);

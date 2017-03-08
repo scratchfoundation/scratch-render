@@ -12,15 +12,16 @@ const ShaderManager = require('./ShaderManager');
 const SVGSkin = require('./SVGSkin');
 
 /**
- * @callback idFilterFunc
+ * @callback RenderWebGL#idFilterFunc
  * @param {int} drawableID The ID to filter.
  * @return {bool} True if the ID passes the filter, otherwise false.
  */
 
 /**
  * Maximum touch size for a picking check.
- * TODO: Figure out a reasonable max size. Maybe this should be configurable?
- * @type {int[]}
+ * @todo Figure out a reasonable max size. Maybe this should be configurable?
+ * @type {Array<int>}
+ * @memberof RenderWebGL
  */
 const MAX_TOUCH_SIZE = [3, 3];
 
@@ -28,9 +29,18 @@ const MAX_TOUCH_SIZE = [3, 3];
  * "touching {color}?" or "{color} touching {color}?" tests will be true if the
  * target is touching a color whose components are each within this tolerance of
  * the corresponding component of the query color.
- * @type {int} between 0 (exact matches only) and 255 (match anything).
+ * between 0 (exact matches only) and 255 (match anything).
+ * @type {int}
+ * @memberof RenderWebGL
  */
 const TOLERANCE_TOUCHING_COLOR = 2;
+
+/**
+ * Sprite Fencing - The number of pixels a sprite is required to leave remaining
+ * onscreen around the edge of the staging area.
+ * @type {number}
+ */
+const FENCE_WIDTH = 15;
 
 
 class RenderWebGL extends EventEmitter {
@@ -40,14 +50,15 @@ class RenderWebGL extends EventEmitter {
      * The stage's "native" size will be calculated from the these coordinates.
      * For example, the defaults result in a native size of 480x360.
      * Queries such as "touching color?" will always execute at the native size.
-     * @see setStageSize
-     * @see resize
+     * @see RenderWebGL#setStageSize
+     * @see RenderWebGL#resize
      * @param {canvas} canvas The canvas to draw onto.
      * @param {int} [xLeft=-240] The x-coordinate of the left edge.
      * @param {int} [xRight=240] The x-coordinate of the right edge.
      * @param {int} [yBottom=-180] The y-coordinate of the bottom edge.
      * @param {int} [yTop=180] The y-coordinate of the top edge.
      * @constructor
+     * @listens RenderWebGL#event:NativeSizeChanged
      */
     constructor (canvas, xLeft, xRight, yBottom, yTop) {
         super();
@@ -58,7 +69,7 @@ class RenderWebGL extends EventEmitter {
         /** @type {Skin[]} */
         this._allSkins = [];
 
-        /** @type {int[]} */
+        /** @type {Array<int>} */
         this._drawList = [];
 
         /** @type {WebGLRenderingContext} */
@@ -76,6 +87,7 @@ class RenderWebGL extends EventEmitter {
         /** @type {Object.<string,int>} */
         this._skinUrlMap = {};
 
+        /** @type {ShaderManager} */
         this._shaderManager = new ShaderManager(gl);
 
         /** @type {HTMLCanvasElement} */
@@ -90,7 +102,8 @@ class RenderWebGL extends EventEmitter {
         this.resize(this._nativeSize[0], this._nativeSize[1]);
 
         gl.disable(gl.DEPTH_TEST);
-        gl.enable(gl.BLEND); // TODO: disable when no partial transparency?
+        /** @todo disable when no partial transparency? */
+        gl.enable(gl.BLEND);
         gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
     }
 
@@ -153,7 +166,7 @@ class RenderWebGL extends EventEmitter {
     }
 
     /**
-     * @return {[int,int]} the "native" size of the stage, which is used for pen, query renders, etc.
+     * @return {Array<int>} the "native" size of the stage, which is used for pen, query renders, etc.
      */
     getNativeSize () {
         return [this._nativeSize[0], this._nativeSize[1]];
@@ -164,6 +177,7 @@ class RenderWebGL extends EventEmitter {
      * @param {int} width - the new width to set.
      * @param {int} height - the new height to set.
      * @private
+     * @fires RenderWebGL#event:NativeSizeChanged
      */
     _setNativeSize (width, height) {
         this._nativeSize = [width, height];
@@ -176,8 +190,8 @@ class RenderWebGL extends EventEmitter {
      * Use `createBitmapSkin` or `createSVGSkin` instead.
      * @param {!string} skinUrl The URL of the skin.
      * @param {!int} [costumeResolution] Optional: resolution for the skin. Ignored unless creating a new Bitmap skin.
-     * @param {number[]=} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the skin
-     * will be used.
+     * @param {?Array<number>} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the
+     * skin will be used.
      * @returns {!int} The ID of the Skin.
      * @deprecated
      */
@@ -238,7 +252,8 @@ class RenderWebGL extends EventEmitter {
      * Create a new bitmap skin from a snapshot of the provided bitmap data.
      * @param {ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement} bitmapData - new contents for this skin.
      * @param {!int} [costumeResolution=1] - The resolution to use for this bitmap.
-     * @param {number[]=} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the skin
+     * @param {?Array<number>} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the
+     * skin will be used
      * @returns {!int} the ID for the new skin.
      */
     createBitmapSkin (bitmapData, costumeResolution, rotationCenter) {
@@ -252,7 +267,8 @@ class RenderWebGL extends EventEmitter {
     /**
      * Create a new SVG skin.
      * @param {!string} svgData - new SVG to use.
-     * @param {number[]=} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the skin
+     * @param {?Array<number>} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the
+     * skin will be used
      * @returns {!int} the ID for the new skin.
      */
     createSVGSkin (svgData, rotationCenter) {
@@ -375,7 +391,7 @@ class RenderWebGL extends EventEmitter {
             const points = this._getConvexHullPointsForDrawable(drawableID);
             drawable.setConvexHullPoints(points);
         }
-        const bounds = drawable.getBounds();
+        const bounds = drawable.getFastBounds();
         // In debug mode, draw the bounds.
         if (this._debugCanvas) {
             const gl = this._gl;
@@ -398,7 +414,7 @@ class RenderWebGL extends EventEmitter {
     /**
      * Get the current skin (costume) size of a Drawable.
      * @param {int} drawableID The ID of the Drawable to measure.
-     * @return {Array.<number>} Skin size, width and height.
+     * @return {Array<number>} Skin size, width and height.
      */
     getSkinSize (drawableID) {
         const drawable = this._allDrawables[drawableID];
@@ -408,8 +424,8 @@ class RenderWebGL extends EventEmitter {
     /**
      * Check if a particular Drawable is touching a particular color.
      * @param {int} drawableID The ID of the Drawable to check.
-     * @param {int[]} color3b Test if the Drawable is touching this color.
-     * @param {int[]} [mask3b] Optionally mask the check to this part of Drawable.
+     * @param {Array<int>} color3b Test if the Drawable is touching this color.
+     * @param {Array<int>} [mask3b] Optionally mask the check to this part of Drawable.
      * @returns {boolean} True iff the Drawable is touching the color.
      */
     isTouchingColor (drawableID, color3b, mask3b) {
@@ -452,15 +468,14 @@ class RenderWebGL extends EventEmitter {
                     ShaderManager.DRAW_MODE.colorMask :
                     ShaderManager.DRAW_MODE.silhouette,
                 projection,
-                null,
-                extraUniforms);
+                {extraUniforms});
 
             gl.stencilFunc(gl.EQUAL, 1, 1);
             gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
             gl.colorMask(true, true, true, true);
 
             this._drawThese(candidateIDs, ShaderManager.DRAW_MODE.default, projection,
-                testID => testID !== drawableID
+                {idFilterFunc: testID => testID !== drawableID}
             );
         } finally {
             gl.colorMask(true, true, true, true);
@@ -497,7 +512,7 @@ class RenderWebGL extends EventEmitter {
     /**
      * Check if a particular Drawable is touching any in a set of Drawables.
      * @param {int} drawableID The ID of the Drawable to check.
-     * @param {int[]} candidateIDs The Drawable IDs to check, otherwise all.
+     * @param {Array<int>} candidateIDs The Drawable IDs to check, otherwise all.
      * @returns {boolean} True iff the Drawable is touching one of candidateIDs.
      */
     isTouchingDrawables (drawableID, candidateIDs) {
@@ -537,7 +552,7 @@ class RenderWebGL extends EventEmitter {
             gl.colorMask(true, true, true, true);
 
             this._drawThese(candidateIDs, ShaderManager.DRAW_MODE.silhouette, projection,
-                testID => testID !== drawableID
+                {idFilterFunc: testID => testID !== drawableID}
             );
         } finally {
             gl.colorMask(true, true, true, true);
@@ -575,7 +590,7 @@ class RenderWebGL extends EventEmitter {
      * @param {int} centerY The client y coordinate of the picking location.
      * @param {int} touchWidth The client width of the touch event (optional).
      * @param {int} touchHeight The client height of the touch event (optional).
-     * @param {int[]} candidateIDs The Drawable IDs to pick from, otherwise all.
+     * @param {Array<int>} candidateIDs The Drawable IDs to pick from, otherwise all.
      * @returns {int} The ID of the topmost Drawable under the picking location, or
      * RenderConstants.ID_NONE if there is no Drawable at that location.
      */
@@ -656,6 +671,85 @@ class RenderWebGL extends EventEmitter {
     }
 
     /**
+     * @typedef DrawableExtraction
+     * @property {Uint8Array} data Raw pixel data for the drawable
+     * @property {int} width Drawable bounding box width
+     * @property {int} height Drawable bounding box height
+     * @property {Array<number>} scratchOffset [x, y] offset in Scratch coordinates
+     * from the drawable position to the client x, y coordinate
+     * @property {int} x The x coordinate relative to drawable bounding box
+     * @property {int} y The y coordinate relative to drawable bounding box
+     */
+
+    /**
+     * Return drawable pixel data and picking coordinates relative to the drawable bounds
+     * @param {int} drawableID The ID of the drawable to get pixel data for
+     * @param {int} x The client x coordinate of the picking location.
+     * @param {int} y The client y coordinate of the picking location.
+     * @return {?DrawableExtraction} Data about the picked drawable
+     */
+    extractDrawable (drawableID, x, y) {
+        const drawable = this._allDrawables[drawableID];
+        if (!drawable) return null;
+
+        const gl = this._gl;
+        twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
+
+        const bounds = drawable.getFastBounds();
+        bounds.snapToInt();
+
+        // Translate input x and y to coordinates relative to the drawable
+        const pickX = x - ((this._nativeSize[0] / 2) + bounds.left);
+        const pickY = y - ((this._nativeSize[1] / 2) - bounds.top);
+
+        // Limit size of viewport to the bounds around the target Drawable,
+        // and create the projection matrix for the draw.
+        gl.viewport(0, 0, bounds.width, bounds.height);
+        const projection = twgl.m4.ortho(bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1);
+
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        try {
+            gl.disable(gl.BLEND);
+            this._drawThese([drawableID], ShaderManager.DRAW_MODE.default, projection,
+                {effectMask: ~ShaderManager.EFFECT_INFO.ghost.mask});
+        } finally {
+            gl.enable(gl.BLEND);
+        }
+
+        const data = new Uint8Array(bounds.width * bounds.height * 4);
+        gl.readPixels(0, 0, bounds.width, bounds.height, gl.RGBA, gl.UNSIGNED_BYTE, data);
+
+        if (this._debugCanvas) {
+            this._debugCanvas.width = bounds.width;
+            this._debugCanvas.height = bounds.height;
+            const ctx = this._debugCanvas.getContext('2d');
+            const imageData = ctx.createImageData(bounds.width, bounds.height);
+            imageData.data.set(data);
+            ctx.putImageData(imageData, 0, 0);
+            ctx.beginPath();
+            ctx.arc(pickX, pickY, 3, 0, 2 * Math.PI, false);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+        }
+
+        return {
+            data: data,
+            width: bounds.width,
+            height: bounds.height,
+            scratchOffset: [
+                (this._nativeSize[0] / 2) - x + drawable._position[0],
+                (this._nativeSize[1] / 2) - y - drawable._position[1]
+            ],
+            x: pickX,
+            y: pickY
+        };
+    }
+
+    /**
      * Get the candidate bounding box for a touching query.
      * @param {int} drawableID ID for drawable of query.
      * @return {?Rectangle} Rectangle bounds for touching query, or null.
@@ -663,7 +757,7 @@ class RenderWebGL extends EventEmitter {
     _touchingBounds (drawableID) {
         const drawable = this._allDrawables[drawableID];
 
-        // TODO: remove this once URL-based skin setting is removed.
+        /** @todo remove this once URL-based skin setting is removed. */
         if (!drawable.skin || !drawable.skin.getTexture([100, 100])) return null;
 
         const bounds = drawable.getFastBounds();
@@ -686,9 +780,9 @@ class RenderWebGL extends EventEmitter {
      * Filter a list of candidates for a touching query into only those that
      * could possibly intersect the given bounds.
      * @param {int} drawableID - ID for drawable of query.
-     * @param {Array.<int>} candidateIDs - Candidates for touching query.
+     * @param {Array<int>} candidateIDs - Candidates for touching query.
      * @param {Rectangle} bounds - Bounds to limit candidates to.
-     * @return {?Array.<int>} Filtered candidateIDs, or null if none.
+     * @return {?Array<int>} Filtered candidateIDs, or null if none.
      */
     _filterCandidatesTouching (drawableID, candidateIDs, bounds) {
         // Filter candidates by rough bounding box intersection.
@@ -716,11 +810,13 @@ class RenderWebGL extends EventEmitter {
     updateDrawableProperties (drawableID, properties) {
         const drawable = this._allDrawables[drawableID];
         if (!drawable) {
-            // TODO: fix whatever's wrong in the VM which causes this, then add a warning or throw here.
-            // Right now this happens so much on some projects that a warning or exception here can hang the browser.
+            /**
+             * @todo fix whatever's wrong in the VM which causes this, then add a warning or throw here.
+             * Right now this happens so much on some projects that a warning or exception here can hang the browser.
+             */
             return;
         }
-        // TODO: remove this after fully deprecating URL-based skin paths
+        /** @todo remove this after fully deprecating URL-based skin paths */
         if ('skin' in properties) {
             const {skin, costumeResolution, rotationCenter} = properties;
             const skinId = this.createSkinFromURL(skin, costumeResolution, rotationCenter);
@@ -734,6 +830,44 @@ class RenderWebGL extends EventEmitter {
             drawable.skin.setRotationCenter(newRotationCenter[0], newRotationCenter[1]);
         }
         drawable.updateProperties(properties);
+    }
+
+    /**
+     * Update the position object's x & y members to keep the drawable fenced in view.
+     * @param {int} drawableID - The ID of the Drawable to update.
+     * @param {Array.<number, number>} position to be fenced - An array of type [x, y]
+     * @return {Array.<number, number>} The fenced position as an array [x, y]
+     */
+    getFencedPositionOfDrawable (drawableID, position) {
+
+        let x = position[0];
+        let y = position[1];
+
+        const drawable = this._allDrawables[drawableID];
+        if (!drawable) {
+            // TODO: fix whatever's wrong in the VM which causes this, then add a warning or throw here.
+            // Right now this happens so much on some projects that a warning or exception here can hang the browser.
+            return [x, y];
+        }
+
+        const dx = x - drawable._position[0];
+        const dy = y - drawable._position[1];
+
+        const aabb = drawable.getFastBounds();
+
+        const sx = this._xRight - Math.min(FENCE_WIDTH, Math.floor((aabb.right - aabb.left) / 2));
+        if (aabb.right + dx < -sx) {
+            x = drawable._position[0] - (sx + aabb.right);
+        } else if (aabb.left + dx > sx) {
+            x = drawable._position[0] + (sx - aabb.left);
+        }
+        const sy = this._yTop - Math.min(FENCE_WIDTH, Math.floor((aabb.top - aabb.bottom) / 2));
+        if (aabb.top + dy < -sy) {
+            y = drawable._position[1] - (sy + aabb.top);
+        } else if (aabb.bottom + dy > sy) {
+            y = drawable._position[1] + (sy - aabb.bottom);
+        }
+        return [x, y];
     }
 
     /**
@@ -801,7 +935,7 @@ class RenderWebGL extends EventEmitter {
 
         try {
             gl.disable(gl.BLEND);
-            this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection);
+            this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {isStamping: true});
         } finally {
             gl.enable(gl.BLEND);
         }
@@ -877,7 +1011,7 @@ class RenderWebGL extends EventEmitter {
             this._pickBufferInfo = twgl.createFramebufferInfo(gl, attachments, MAX_TOUCH_SIZE[0], MAX_TOUCH_SIZE[1]);
         }
 
-        // TODO: should we create this on demand to save memory?
+        /** @todo should we create this on demand to save memory? */
         // A 480x360 32-bpp buffer is 675 KiB.
         if (this._queryBufferInfo) {
             twgl.resizeFramebufferInfo(gl, this._queryBufferInfo, attachments, width, height);
@@ -887,15 +1021,18 @@ class RenderWebGL extends EventEmitter {
     }
 
     /**
-     * Draw all Drawables, with the possible exception of
-     * @param {int[]} drawables The Drawable IDs to draw, possibly this._drawList.
+     * Draw a set of Drawables, by drawable ID
+     * @param {Array<int>} drawables The Drawable IDs to draw, possibly this._drawList.
      * @param {ShaderManager.DRAW_MODE} drawMode Draw normally, silhouette, etc.
      * @param {module:twgl/m4.Mat4} projection The projection matrix to use.
-     * @param {idFilterFunc} [filter] An optional filter function.
-     * @param {Object.<string,*>} [extraUniforms] Extra uniforms for the shaders.
+     * @param {object} [opts] Options for drawing
+     * @param {idFilterFunc} opts.filter An optional filter function.
+     * @param {object.<string,*>} opts.extraUniforms Extra uniforms for the shaders.
+     * @param {int} opts.effectMask Bitmask for effects to allow
+     * @param {boolean} opts.isStamping Stamp mode ignores sprite visibility, always drawing.
      * @private
      */
-    _drawThese (drawables, drawMode, projection, filter, extraUniforms) {
+    _drawThese (drawables, drawMode, projection, opts = {}) {
         const gl = this._gl;
         let currentShader = null;
 
@@ -904,20 +1041,21 @@ class RenderWebGL extends EventEmitter {
             const drawableID = drawables[drawableIndex];
 
             // If we have a filter, check whether the ID fails
-            if (filter && !filter(drawableID)) continue;
+            if (opts.filter && !opts.filter(drawableID)) continue;
 
             const drawable = this._allDrawables[drawableID];
-            // TODO: check if drawable is inside the viewport before anything else
+            /** @todo check if drawable is inside the viewport before anything else */
 
-            // Hidden drawables (e.g., by a "hide" block) are never drawn.
-            if (!drawable.getVisible()) continue;
+            // Hidden drawables (e.g., by a "hide" block) are not drawn unless stamping
+            if (!drawable.getVisible() && !opts.isStamping) continue;
 
             const drawableScale = drawable.scale;
 
             // If the texture isn't ready yet, skip it.
             if (!drawable.skin.getTexture(drawableScale)) continue;
 
-            const effectBits = drawable.getEnabledEffects();
+            let effectBits = drawable.getEnabledEffects();
+            effectBits &= opts.hasOwnProperty('effectMask') ? opts.effectMask : effectBits;
             const newShader = this._shaderManager.getShader(drawMode, effectBits);
             if (currentShader !== newShader) {
                 currentShader = newShader;
@@ -931,11 +1069,11 @@ class RenderWebGL extends EventEmitter {
             twgl.setUniforms(currentShader, drawable.getUniforms());
 
             // Apply extra uniforms after the Drawable's, to allow overwriting.
-            if (extraUniforms) {
-                twgl.setUniforms(currentShader, extraUniforms);
+            if (opts.extraUniforms) {
+                twgl.setUniforms(currentShader, opts.extraUniforms);
             }
 
-            twgl.drawBufferInfo(gl, gl.TRIANGLES, this._bufferInfo);
+            twgl.drawBufferInfo(gl, this._bufferInfo, gl.TRIANGLES);
         }
     }
 
@@ -945,7 +1083,7 @@ class RenderWebGL extends EventEmitter {
      * Read back the pixels and find all boundary points.
      * Finally, apply a convex hull algorithm to simplify the set.
      * @param {int} drawableID The Drawable IDs calculate convex hull for.
-     * @return {Array.<Array.<number>>} points Convex hull points, as [[x, y], ...]
+     * @return {Array<Array<number>>} points Convex hull points, as [[x, y], ...]
      */
     _getConvexHullPointsForDrawable (drawableID) {
         const drawable = this._allDrawables[drawableID];
@@ -975,8 +1113,7 @@ class RenderWebGL extends EventEmitter {
         this._drawThese([drawableID],
             ShaderManager.DRAW_MODE.silhouette,
             projection,
-            null,
-            {u_modelMatrix: modelMatrix}
+            {extraUniforms: {u_modelMatrix: modelMatrix}}
         );
 
         const pixels = new Uint8Array(width * height * 4);
@@ -992,7 +1129,7 @@ class RenderWebGL extends EventEmitter {
          * @return {int} Known ID at that pixel, or RenderConstants.ID_NONE.
          */
         const _getPixel = (x, y) => {
-            const pixelBase = ((width * y) + x) * 4;
+            const pixelBase = Math.round(((width * y) + x) * 4); // Sometimes SVGs don't have int width and height
             return Drawable.color3bToID(
                 pixels[pixelBase],
                 pixels[pixelBase + 1],
@@ -1018,5 +1155,8 @@ class RenderWebGL extends EventEmitter {
         return hull(boundaryPoints, Infinity);
     }
 }
+
+// :3
+RenderWebGL.prototype.canHazPixels = RenderWebGL.prototype.extractDrawable;
 
 module.exports = RenderWebGL;
