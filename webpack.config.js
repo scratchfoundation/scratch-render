@@ -8,7 +8,7 @@ const base = {
         host: '0.0.0.0',
         port: process.env.PORT || 8361
     },
-    devtool: 'source-map',
+    devtool: 'cheap-module-source-map',
     module: {
         rules: [
             {
@@ -60,19 +60,6 @@ module.exports = [
         },
         output: {
             path: path.resolve(__dirname, 'dist/web'),
-            filename: '[name].js'
-        }
-    }),
-    // Node-compatible
-    Object.assign({}, base, {
-        target: 'node',
-        entry: {
-            'scratch-render': './src/index.js'
-        },
-        output: {
-            library: 'ScratchRender',
-            libraryTarget: 'commonjs2',
-            path: path.resolve(__dirname, 'dist/node'),
             filename: '[name].js'
         }
     })
