@@ -37,7 +37,7 @@
     "hull.js": "0.2.10",
     "jsdoc": "^3.5.5",
     "json": "^9.0.4",
-    "raw-loader": "^0.5.1",
+    "raw-loader": "^1.0.0-beta.0",
     "scratch-render-fonts": "git+https://github.com/LLK/scratch-render-fonts.git",
     "tap": "^10.3.0",
     "travis-after-all": "^1.4.4",
