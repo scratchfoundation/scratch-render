@@ -20,16 +20,19 @@ const base = {
                 options: {
                     presets: ['es2015']
                 }
+            },
+            {
+                test: /node_modules[\\/](linebreak|grapheme-breaker)[\\/].*\.js$/,
+                loader: 'ify-loader'
             }
         ]
     },
-    plugins: [
+    plugins: process.env.NODE_ENV === 'production' ? [
         new webpack.optimize.UglifyJsPlugin({
             include: /\.min\.js$/,
-            minimize: true,
-            sourceMap: true
+            minimize: true
         })
-    ]
+    ] : []
 };
 
 module.exports = [

@@ -57,20 +57,19 @@ class SvgRenderer {
     fromString (svgString, onFinish) {
         // Store the callback for later.
         this._onFinish = onFinish;
-        // Parse string into SVG XML.
-        const parser = new DOMParser();
-        this._svgDom = parser.parseFromString(svgString, 'text/xml');
-        if (this._svgDom.childNodes.length < 1 ||
-            this._svgDom.documentElement.localName !== 'svg') {
-            throw new Error('Document does not appear to be SVG.');
-        }
-        this._svgTag = this._svgDom.documentElement;
-        // Transform all text elements.
-        this._transformText();
-        // Transform measurements.
-        this._transformMeasurements();
+        this._loadString(svgString);
         // Draw to a canvas.
         this._draw();
+    }
+
+    /**
+     * Load an SVG from a string and measure it.
+     * @param {string} svgString String of SVG data to draw in quirks-mode.
+     * @return {object} the natural size, in Scratch units, of this SVG.
+     */
+    measure (svgString) {
+        this._loadString(svgString);
+        return this._measurements;
     }
 
     /**
@@ -85,6 +84,25 @@ class SvgRenderer {
      */
     get viewOffset () {
         return [this._measurements.x, this._measurements.y];
+    }
+
+    /**
+     * Load an SVG string and normalize it. All the steps before drawing/measuring.
+     * @param {string} svgString String of SVG data to draw in quirks-mode.
+     */
+    _loadString (svgString) {
+        // Parse string into SVG XML.
+        const parser = new DOMParser();
+        this._svgDom = parser.parseFromString(svgString, 'text/xml');
+        if (this._svgDom.childNodes.length < 1 ||
+            this._svgDom.documentElement.localName !== 'svg') {
+            throw new Error('Document does not appear to be SVG.');
+        }
+        this._svgTag = this._svgDom.documentElement;
+        // Transform all text elements.
+        this._transformText();
+        // Transform measurements.
+        this._transformMeasurements();
     }
 
     /**
@@ -118,7 +136,7 @@ class SvgRenderer {
             textElement.setAttribute('alignment-baseline', 'text-before-edge');
             // If there's no font size provided, provide one.
             if (!textElement.getAttribute('font-size')) {
-                textElement.setAttribute('font-size', '18');
+                textElement.setAttribute('font-size', '14');
             }
             // If there's no font-family provided, provide one.
             if (!textElement.getAttribute('font-family')) {
@@ -136,7 +154,7 @@ class SvgRenderer {
                 for (const line of lines) {
                     const tspanNode = this._createSVGElement('tspan');
                     tspanNode.setAttribute('x', '0');
-                    tspanNode.setAttribute('dy', '1em');
+                    tspanNode.setAttribute('dy', '1.2em');
                     tspanNode.textContent = line;
                     textElement.appendChild(tspanNode);
                 }
@@ -160,6 +178,37 @@ class SvgRenderer {
         }
         newDefs.appendChild(newStyle);
         this._svgTag.insertBefore(newDefs, this._svgTag.childNodes[0]);
+    }
+
+    /**
+     * Find the largest stroke width in the svg. If a shape has no
+     * `stroke` property, it has a stroke-width of 0. If it has a `stroke`,
+     * it is by default a stroke-width of 1.
+     * This is used to enlarge the computed bounding box, which doesn't take
+     * stroke width into account.
+     * @param {SVGSVGElement} rootNode The root SVG node to traverse.
+     * @return {number} The largest stroke width in the SVG.
+     */
+    _findLargestStrokeWidth (rootNode) {
+        let largestStrokeWidth = 0;
+        const collectStrokeWidths = domElement => {
+            if (domElement.getAttribute) {
+                if (domElement.getAttribute('stroke')) {
+                    largestStrokeWidth = Math.max(largestStrokeWidth, 1);
+                }
+                if (domElement.getAttribute('stroke-width')) {
+                    largestStrokeWidth = Math.max(
+                        largestStrokeWidth,
+                        Number(domElement.getAttribute('stroke-width')) || 0
+                    );
+                }
+            }
+            for (let i = 0; i < domElement.childNodes.length; i++) {
+                collectStrokeWidths(domElement.childNodes[i]);
+            }
+        };
+        collectStrokeWidths(rootNode);
+        return largestStrokeWidth;
     }
 
     /**
@@ -203,6 +252,15 @@ class SvgRenderer {
         this._svgDom = parser.parseFromString(svgText, 'text/xml');
         this._svgTag = this._svgDom.documentElement;
 
+        // Enlarge the bbox from the largest found stroke width
+        // This may have false-positives, but at least the bbox will always
+        // contain the full graphic including strokes.
+        const halfStrokeWidth = this._findLargestStrokeWidth(this._svgTag) / 2;
+        bbox.width += halfStrokeWidth * 2;
+        bbox.height += halfStrokeWidth * 2;
+        bbox.x -= halfStrokeWidth;
+        bbox.y -= halfStrokeWidth;
+
         // Set the correct measurements on the SVG tag, and save them.
         this._svgTag.setAttribute('width', bbox.width);
         this._svgTag.setAttribute('height', bbox.height);
@@ -241,15 +299,14 @@ class SvgRenderer {
         const ratio = this.getDrawRatio();
         const bbox = this._measurements;
 
-        // Set up the canvas for drawing.
-        this._canvas.width = bbox.width * ratio;
-        this._canvas.height = bbox.height * ratio;
-        this._context.clearRect(0, 0, this._canvas.width, this._canvas.height);
-        this._context.scale(ratio, ratio);
-
         // Convert the SVG text to an Image, and then draw it to the canvas.
         const img = new Image();
         img.onload = () => {
+            // Set up the canvas for drawing.
+            this._canvas.width = bbox.width * ratio;
+            this._canvas.height = bbox.height * ratio;
+            this._context.clearRect(0, 0, this._canvas.width, this._canvas.height);
+            this._context.scale(ratio, ratio);
             this._context.drawImage(img, 0, 0);
             // Reset the canvas transform after drawing.
             this._context.setTransform(1, 0, 0, 1, 0, 0);
