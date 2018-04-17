@@ -90,13 +90,31 @@ class BitmapSkin extends Skin {
         }
 
         // Do these last in case any of the above throws an exception
-        this._costumeResolution = costumeResolution || 1;
         this._textureSize = BitmapSkin._getBitmapSize(bitmapData);
+        this._costumeResolution = costumeResolution || this.calculateBitmapResolution();
+
 
         if (typeof rotationCenter === 'undefined') rotationCenter = this.calculateRotationCenter();
         this.setRotationCenter.apply(this, rotationCenter);
 
         this.emit(Skin.Events.WasAltered);
+    }
+
+    /**
+     * Calculate the bitmap resolution for the skin based on its texture size.
+     * @return {number} The bitmap resolution -
+     * 1 - if the skin is smaller than double the native stage size
+     * 2 - if the skin is double the native stage size or larger
+     */
+    calculateBitmapResolution () {
+        // Calculate what the bitmap resolution should be given the texture size
+        const textureWidth = this._textureSize[0];
+        const textureHeight = this._textureSize[1];
+        const [stageNativeWidth, stageNativeHeight] = this._renderer.getNativeSize();
+        const doubleStageWidth = 2 * stageNativeWidth;
+        const doubleStageHeight = 2 * stageNativeHeight;
+        if (textureWidth >= doubleStageWidth && textureHeight >= doubleStageHeight) return 2;
+        return 1;
     }
 
     /**
