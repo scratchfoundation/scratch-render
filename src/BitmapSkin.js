@@ -100,6 +100,12 @@ class BitmapSkin extends Skin {
         this.emit(Skin.Events.WasAltered);
     }
 
+    /**
+     * Calculate the bitmap resolution for the skin based on its texture size.
+     * @return {number} The bitmap resolution -
+     * 1 - if the skin is smaller than double the native stage size
+     * 2 - if the skin is double the native stage size or larger
+     */
     calculateBitmapResolution () {
         // Calculate what the bitmap resolution should be given the texture size
         const textureWidth = this._textureSize[0];
@@ -107,9 +113,7 @@ class BitmapSkin extends Skin {
         const [stageNativeWidth, stageNativeHeight] = this._renderer.getNativeSize();
         const doubleStageWidth = 2 * stageNativeWidth;
         const doubleStageHeight = 2 * stageNativeHeight;
-        if (textureWidth >= doubleStageWidth && textureHeight >= doubleStageHeight) {
-            return 2;
-        }
+        if (textureWidth >= doubleStageWidth && textureHeight >= doubleStageHeight) return 2;
         return 1;
     }
 
