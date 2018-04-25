@@ -8,6 +8,9 @@
   <input type="file" id="file" name="file">
 
   <script>
+    // These variables are going to be available in the "window global" intentionally.
+    // Allows you easy access to debug with `vm.greenFlag()` etc.
+
     var render = new ScratchRender(document.getElementById('test'));
     var vm = new VirtualMachine();
     var storage = new ScratchStorage();
