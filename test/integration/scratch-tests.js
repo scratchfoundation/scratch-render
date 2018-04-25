@@ -5,9 +5,9 @@ const path = require('path');
 const fs = require('fs');
 const chromeless = new Chromeless();
 
-const testFile = (file) => {
+const testFile = file => {
     const fullPath = path.resolve(__dirname, 'scratch-tests', file);
-    return test(file, async function run (t) {
+    return test(file, async t => {
         const result = await chromeless
             .goto(`file://${path.resolve(__dirname, 'index.html')}`)
             .setFileInput('#file', fullPath)
