@@ -71,7 +71,7 @@ const testFile = file => {
         }
 
         // End must be called so that tap knows the test is done. If
-        // the test has an SAY "end" block but that block did not
+        // the test has a SAY "end" block but that block did not
         // execute, this explicit failure will raise that issue so
         // it can be resolved.
         if (!didEnd) {
