@@ -48,8 +48,8 @@ const testFile = file => test(file, async t => {
                 });
         });
 
-        // Map string messages to tap reporting methods. This will be used
-        // with events from scratch's runtime emitted on block instructions.
+    // Map string messages to tap reporting methods. This will be used
+    // with events from scratch's runtime emitted on block instructions.
     let didPlan = false;
     let didEnd = false;
     const reporters = {
