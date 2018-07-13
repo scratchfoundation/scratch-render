@@ -1342,19 +1342,21 @@ class RenderWebGL extends EventEmitter {
             gl.enable(gl.BLEND);
         }
 
-        const stampPixels = new Uint8Array(Math.floor(bounds.width * bounds.height * 4));
-        gl.readPixels(0, 0, bounds.width, bounds.height, gl.RGBA, gl.UNSIGNED_BYTE, stampPixels);
+        // const stampPixels = new Uint8Array(Math.floor(bounds.width * bounds.height * 4));
+        // gl.readPixels(0, 0, bounds.width, bounds.height, gl.RGBA, gl.UNSIGNED_BYTE, stampPixels);
+        //
+        // const stampCanvas = this._tempCanvas;
+        // stampCanvas.width = bounds.width;
+        // stampCanvas.height = bounds.height;
+        //
+        // const stampContext = stampCanvas.getContext('2d');
+        // const stampImageData = stampContext.createImageData(bounds.width, bounds.height);
+        // stampImageData.data.set(stampPixels);
+        // stampContext.putImageData(stampImageData, 0, 0);
+        //
+        // skin.drawStamp(stampCanvas, bounds.left, bounds.top);
 
-        const stampCanvas = this._tempCanvas;
-        stampCanvas.width = bounds.width;
-        stampCanvas.height = bounds.height;
-
-        const stampContext = stampCanvas.getContext('2d');
-        const stampImageData = stampContext.createImageData(bounds.width, bounds.height);
-        stampImageData.data.set(stampPixels);
-        stampContext.putImageData(stampImageData, 0, 0);
-
-        skin.drawStamp(stampCanvas, bounds.left, bounds.top);
+        skin._drawToBuffer(this._queryBufferInfo.attachments[0], bounds.left, bounds.top);
     }
 
     /* ******
