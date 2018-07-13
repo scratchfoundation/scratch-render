@@ -3,6 +3,9 @@ const twgl = require('twgl.js');
 const RenderConstants = require('./RenderConstants');
 const Skin = require('./Skin');
 
+const Rectangle = require('./Rectangle');
+const ShaderManager = require('./ShaderManager');
+
 /**
  * Attributes to use when drawing with the pen
  * @typedef {object} PenSkin#PenAttributes
@@ -89,23 +92,33 @@ class PenSkin extends Skin {
      */
     // eslint-disable-next-line no-unused-vars
     getTexture (pixelsWide, pixelsTall) {
-        if (this._canvasDirty) {
-            this._canvasDirty = false;
+        // if (this._canvasDirty) {
+        //     this._canvasDirty = false;
+        //
+        //     const gl = this._renderer.gl;
+        //     gl.bindTexture(gl.TEXTURE_2D, this._texture);
+        //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
+        // }
 
-            const gl = this._renderer.gl;
-            gl.bindTexture(gl.TEXTURE_2D, this._texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
-        }
+        // return this._texture;
 
-        return this._texture;
+        return this._exportTexture;
     }
 
     /**
      * Clear the pen layer.
      */
     clear () {
+        // console.log('clear');
         const ctx = this._canvas.getContext('2d');
-        ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+        // ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
+        const gl = this._renderer.gl;
+        twgl.bindFramebufferInfo(gl, this._framebuffer);
+
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
         this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
@@ -117,6 +130,7 @@ class PenSkin extends Skin {
      * @param {number} y - the Y coordinate of the point to draw.
      */
     drawPoint (penAttributes, x, y) {
+        // console.log('drawPoint');
         // Canvas renders a zero-length line as two end-caps back-to-back, which is what we want.
         this.drawLine(penAttributes, x, y, x, y);
     }
@@ -130,7 +144,11 @@ class PenSkin extends Skin {
      * @param {number} y1 - the Y coordinate of the end of the line.
      */
     drawLine (penAttributes, x0, y0, x1, y1) {
+        // console.log('drawLine');
         const ctx = this._canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
         this._setAttributes(ctx, penAttributes);
 
         // Width 1 and 3 lines need to be offset by 0.5.
@@ -140,6 +158,9 @@ class PenSkin extends Skin {
         ctx.moveTo(this._rotationCenter[0] + x0 + offset, this._rotationCenter[1] - y0 + offset);
         ctx.lineTo(this._rotationCenter[0] + x1 + offset, this._rotationCenter[1] - y1 + offset);
         ctx.stroke();
+
+        this._drawToBuffer();
+
         this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
@@ -151,10 +172,64 @@ class PenSkin extends Skin {
      * @param {number} y - the Y coordinate of the stamp to draw.
      */
     drawStamp (stampElement, x, y) {
+        // console.log('drawStamp');
         const ctx = this._canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
         ctx.drawImage(stampElement, this._rotationCenter[0] + x, this._rotationCenter[1] - y);
+
+        this._drawToBuffer();
+
         this._canvasDirty = true;
         this._silhouetteDirty = true;
+    }
+
+    _drawToBuffer (texture = this._texture, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
+        // console.log('_drawToBuffer');
+        const gl = this._renderer.gl;
+        twgl.bindFramebufferInfo(gl, this._framebuffer);
+
+        // gl.clearColor(1, 1, 1, 0);
+        // gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // gl.disable(gl.BLEND);
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+
+        const bounds = this._bounds;
+
+        // Limit size of viewport to the bounds around the stamp Drawable and create the projection matrix for the draw.
+        gl.viewport(0, 0, bounds.width, bounds.height);
+        const projection = twgl.m4.ortho(bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1);
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        if (texture === this._texture) {
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
+        }
+
+        const NO_EFFECTS = 0;
+        const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
+
+        gl.useProgram(currentShader.program);
+        twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
+
+        const uniforms = {
+            u_skin: texture,
+            u_projectionMatrix: projection,
+            u_modelMatrix: twgl.m4.multiply(
+                twgl.m4.translation(twgl.v3.create(-x - bounds.width / 2, -y + bounds.height / 2, 0)),
+                twgl.m4.scaling(twgl.v3.create(bounds.width, bounds.height, 0))
+            ),
+            u_fudge: 0,
+        };
+
+        twgl.setTextureParameters(gl, texture, {minMag: gl.NEAREST});
+        twgl.setUniforms(currentShader, uniforms);
+
+        twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
+
+        // gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
     }
 
     /**
@@ -172,12 +247,21 @@ class PenSkin extends Skin {
      */
     _setCanvasSize (canvasSize) {
         const [width, height] = canvasSize;
+        console.log('_setCanvasSize', width, height);
 
         const gl = this._renderer.gl;
+
+        this._bounds = new Rectangle();
+        this._bounds.initFromBounds(width / 2, width / -2, height / 2, height / -2);
+
         this._canvas.width = width;
         this._canvas.height = height;
         this._rotationCenter[0] = width / 2;
         this._rotationCenter[1] = height / 2;
+
+        if (this._texture !== null) {
+            this._renderer.gl.deleteTexture(this._texture);
+        }
         this._texture = twgl.createTexture(
             gl,
             {
@@ -188,6 +272,37 @@ class PenSkin extends Skin {
                 src: this._canvas
             }
         );
+
+        this._exportTexture = twgl.createTexture(
+            gl,
+            {
+                auto: true,
+                mag: gl.NEAREST,
+                min: gl.NEAREST,
+                wrap: gl.CLAMP_TO_EDGE,
+                width,
+                height,
+            }
+        );
+
+        const attachments = [
+            {
+                format: gl.RGBA,
+                attachment: this._exportTexture
+            },
+        ];
+        if (this._framebuffer) {
+            twgl.resizeFramebufferInfo(gl, this._framebuffer, attachments, width, height);
+
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        } else {
+            this._framebuffer = twgl.createFramebufferInfo(gl, attachments, width, height);
+
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+
         this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
