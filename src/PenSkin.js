@@ -46,11 +46,17 @@ class PenSkin extends Skin {
         /** @type {HTMLCanvasElement} */
         this._canvas = document.createElement('canvas');
 
-        /** @type {boolean} */
-        this._canvasDirty = false;
-
         /** @type {WebGLTexture} */
         this._texture = null;
+
+        /** @type {WebGLTexture} */
+        this._exportTexture = null;
+
+        /** @type {WebGLFramebuffer} */
+        this._framebuffer = null;
+
+        /** @type {WebGLFramebuffer} */
+        this._silhouetteBuffer = null;
 
         /** @type {boolean} */
         this._silhouetteDirty = false;
@@ -92,16 +98,6 @@ class PenSkin extends Skin {
      */
     // eslint-disable-next-line no-unused-vars
     getTexture (pixelsWide, pixelsTall) {
-        // if (this._canvasDirty) {
-        //     this._canvasDirty = false;
-        //
-        //     const gl = this._renderer.gl;
-        //     gl.bindTexture(gl.TEXTURE_2D, this._texture);
-        //     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
-        // }
-
-        // return this._texture;
-
         return this._exportTexture;
     }
 
@@ -109,17 +105,12 @@ class PenSkin extends Skin {
      * Clear the pen layer.
      */
     clear () {
-        // console.log('clear');
-        const ctx = this._canvas.getContext('2d');
-        // ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-
         const gl = this._renderer.gl;
         twgl.bindFramebufferInfo(gl, this._framebuffer);
 
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
 
@@ -130,7 +121,6 @@ class PenSkin extends Skin {
      * @param {number} y - the Y coordinate of the point to draw.
      */
     drawPoint (penAttributes, x, y) {
-        // console.log('drawPoint');
         // Canvas renders a zero-length line as two end-caps back-to-back, which is what we want.
         this.drawLine(penAttributes, x, y, x, y);
     }
@@ -144,7 +134,6 @@ class PenSkin extends Skin {
      * @param {number} y1 - the Y coordinate of the end of the line.
      */
     drawLine (penAttributes, x0, y0, x1, y1) {
-        // console.log('drawLine');
         const ctx = this._canvas.getContext('2d');
 
         ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
@@ -161,7 +150,6 @@ class PenSkin extends Skin {
 
         this._drawToBuffer();
 
-        this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
 
@@ -172,7 +160,6 @@ class PenSkin extends Skin {
      * @param {number} y - the Y coordinate of the stamp to draw.
      */
     drawStamp (stampElement, x, y) {
-        // console.log('drawStamp');
         const ctx = this._canvas.getContext('2d');
 
         ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
@@ -181,34 +168,14 @@ class PenSkin extends Skin {
 
         this._drawToBuffer();
 
-        this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
 
-    _drawToBuffer (texture = this._texture, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
-        // console.log('_drawToBuffer');
+    _drawRectangle (currentShader, texture, bounds, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
         const gl = this._renderer.gl;
-        twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-        // gl.clearColor(1, 1, 1, 0);
-        // gl.clear(gl.COLOR_BUFFER_BIT);
-
-        // gl.disable(gl.BLEND);
-        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
-
-        const bounds = this._bounds;
-
-        // Limit size of viewport to the bounds around the stamp Drawable and create the projection matrix for the draw.
         gl.viewport(0, 0, bounds.width, bounds.height);
         const projection = twgl.m4.ortho(bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1);
-
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        if (texture === this._texture) {
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
-        }
-
-        const NO_EFFECTS = 0;
-        const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
 
         gl.useProgram(currentShader.program);
         twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
@@ -227,9 +194,29 @@ class PenSkin extends Skin {
         twgl.setUniforms(currentShader, uniforms);
 
         twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
+    }
 
-        // gl.enable(gl.BLEND);
+    _drawToBuffer (texture = this._texture, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
+        const gl = this._renderer.gl;
+        twgl.bindFramebufferInfo(gl, this._framebuffer);
+
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+
+        const bounds = this._bounds;
+
+        if (texture === this._texture) {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
+        }
+
+        const NO_EFFECTS = 0;
+        const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
+
+        this._drawRectangle(currentShader, texture, bounds, x, y);
+
         gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+
+        this._silhouetteDirty = true;
     }
 
     /**
@@ -247,7 +234,6 @@ class PenSkin extends Skin {
      */
     _setCanvasSize (canvasSize) {
         const [width, height] = canvasSize;
-        console.log('_setCanvasSize', width, height);
 
         const gl = this._renderer.gl;
 
@@ -293,17 +279,15 @@ class PenSkin extends Skin {
         ];
         if (this._framebuffer) {
             twgl.resizeFramebufferInfo(gl, this._framebuffer, attachments, width, height);
-
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+            twgl.resizeFramebufferInfo(gl, this._silhouetteBuffer, [{format: gl.RGBA}], width, height);
         } else {
             this._framebuffer = twgl.createFramebufferInfo(gl, attachments, width, height);
-
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
+            this._silhouetteBuffer = twgl.createFramebufferInfo(gl, [{format: gl.RGBA}], width, height);
         }
 
-        this._canvasDirty = true;
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
         this._silhouetteDirty = true;
     }
 
@@ -334,10 +318,43 @@ class PenSkin extends Skin {
      */
     updateSilhouette () {
         if (this._silhouetteDirty) {
-            if (this._canvasDirty) {
-                this.getTexture();
-            }
+            // Render export texture to another framebuffer
+            const gl = this._renderer.gl;
+            twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
+
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            gl.disable(gl.BLEND);
+
+            const bounds = this._bounds;
+            const texture = this._exportTexture;
+
+            const NO_EFFECTS = 0;
+            const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
+
+            this._drawRectangle(currentShader, texture, bounds);
+
+            gl.enable(gl.BLEND);
+
+            twgl.bindFramebufferInfo(gl, null);
+
+            // Sample the framebuffer's pixels into the silhouette instance
+            const skinPixels = new Uint8Array(Math.floor(this._canvas.width * this._canvas.height * 4));
+            gl.readPixels(0, 0, this._canvas.width, this._canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, skinPixels);
+
+            const skinCanvas = this._canvas;
+            skinCanvas.width = bounds.width;
+            skinCanvas.height = bounds.height;
+
+            const skinContext = skinCanvas.getContext('2d');
+            const skinImageData = skinContext.createImageData(bounds.width, bounds.height);
+            skinImageData.data.set(skinPixels);
+            skinContext.putImageData(skinImageData, 0, 0);
+
             this._silhouette.update(this._canvas);
+
+            this._silhouetteDirty = false;
         }
     }
 }
