@@ -1455,15 +1455,14 @@ class RenderWebGL extends EventEmitter {
             let effectBits = drawable.getEnabledEffects();
             effectBits &= opts.hasOwnProperty('effectMask') ? opts.effectMask : effectBits;
             const newShader = this._shaderManager.getShader(drawMode, effectBits);
-            if (currentShader !== newShader) {
-                currentShader = newShader;
-                gl.useProgram(currentShader.program);
-                twgl.setBuffersAndAttributes(gl, currentShader, this._bufferInfo);
-                Object.assign(uniforms, {
-                    u_projectionMatrix: projection,
-                    u_fudge: window.fudge || 0
-                });
-            }
+
+            currentShader = newShader;
+            gl.useProgram(currentShader.program);
+            twgl.setBuffersAndAttributes(gl, currentShader, this._bufferInfo);
+            Object.assign(uniforms, {
+                u_projectionMatrix: projection,
+                u_fudge: window.fudge || 0
+            });
 
             Object.assign(uniforms,
                 drawable.skin.getUniforms(drawableScale),

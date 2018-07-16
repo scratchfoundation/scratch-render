@@ -98,6 +98,10 @@ class PenSkin extends Skin {
      */
     // eslint-disable-next-line no-unused-vars
     getTexture (pixelsWide, pixelsTall) {
+        if (this._canvasDirty) {
+            this._drawToBuffer();
+        }
+
         return this._exportTexture;
     }
 
@@ -110,6 +114,9 @@ class PenSkin extends Skin {
 
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
+
+        const ctx = this._canvas.getContext('2d');
+        ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
 
         this._silhouetteDirty = true;
     }
@@ -136,8 +143,6 @@ class PenSkin extends Skin {
     drawLine (penAttributes, x0, y0, x1, y1) {
         const ctx = this._canvas.getContext('2d');
 
-        ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-
         this._setAttributes(ctx, penAttributes);
 
         // Width 1 and 3 lines need to be offset by 0.5.
@@ -148,8 +153,7 @@ class PenSkin extends Skin {
         ctx.lineTo(this._rotationCenter[0] + x1 + offset, this._rotationCenter[1] - y1 + offset);
         ctx.stroke();
 
-        this._drawToBuffer();
-
+        this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
 
@@ -162,12 +166,9 @@ class PenSkin extends Skin {
     drawStamp (stampElement, x, y) {
         const ctx = this._canvas.getContext('2d');
 
-        ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-
         ctx.drawImage(stampElement, this._rotationCenter[0] + x, this._rotationCenter[1] - y);
 
-        this._drawToBuffer();
-
+        this._canvasDirty = true;
         this._silhouetteDirty = true;
     }
 
@@ -197,6 +198,10 @@ class PenSkin extends Skin {
     }
 
     _drawToBuffer (texture = this._texture, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
+        if (texture !== this._texture && this._canvasDirty) {
+            this._drawToBuffer();
+        }
+
         const gl = this._renderer.gl;
         twgl.bindFramebufferInfo(gl, this._framebuffer);
 
@@ -207,6 +212,11 @@ class PenSkin extends Skin {
         if (texture === this._texture) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
+
+            const ctx = this._canvas.getContext('2d');
+            ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
+            this._canvasDirty = false;
         }
 
         const NO_EFFECTS = 0;
@@ -215,6 +225,8 @@ class PenSkin extends Skin {
         this._drawRectangle(currentShader, texture, bounds, x, y);
 
         gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+
+        twgl.bindFramebufferInfo(gl, null);
 
         this._silhouetteDirty = true;
     }
@@ -318,6 +330,10 @@ class PenSkin extends Skin {
      */
     updateSilhouette () {
         if (this._silhouetteDirty) {
+            if (this._canvasDirty) {
+                this._drawToBuffer();
+            }
+
             // Render export texture to another framebuffer
             const gl = this._renderer.gl;
             twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
