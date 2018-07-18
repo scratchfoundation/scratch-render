@@ -35,6 +35,14 @@ uniform float u_mosaic;
 uniform float u_ghost;
 #endif // ENABLE_ghost
 
+#ifdef DRAW_MODE_line
+varying vec2 v_lineA;
+varying vec2 v_lineB;
+uniform vec4 u_lineColor;
+uniform float u_lineWidth;
+varying vec2 v_position;
+#endif // DRAW_MODE_line
+
 uniform sampler2D u_skin;
 
 varying vec2 v_texCoord;
@@ -103,6 +111,7 @@ const vec2 kCenter = vec2(0.5, 0.5);
 
 void main()
 {
+	#ifndef DRAW_MODE_line
 	vec2 texcoord0 = v_texCoord;
 
 	#ifdef ENABLE_mosaic
@@ -148,6 +157,34 @@ void main()
 
 	gl_FragColor = texture2D(u_skin, texcoord0);
 
+	#else // DRAW_MODE_line
+	{
+		gl_FragColor = u_lineColor;
+
+		vec2 v = v_position;
+		vec2 s0 = (v_lineA - v_lineB);
+		float c = dot(v - v_lineB, s0) / dot(s0, s0);
+		vec2 s3 = s0 * c + v_lineB;
+		// vec2 s3A = s3 - v_lineA;
+		// vec2 s3B = s3 - v_lineB;
+		// float l = max(dot(s0, s0) - max(dot(s3A, s3A), dot(s3B, s3B)), 0.0);
+
+		// float halfWidthSq = u_lineWidth * u_lineWidth / 2.0 / 2.0;
+		// vec2 vs3 = v - s3;
+		// float w = max(halfWidthSq - dot(vs3, vs3), 0.0);
+
+		// vec2 vlA = v - v_lineA;
+		// vec2 vlB = v - v_lineB;
+		// float r = max(halfWidthSq - min(dot(vlA, vlA), dot(vlB, vlB)), 0.0);
+
+		float halfWidth = u_lineWidth / 2.0;
+		float l = min(max(length(s0) + 1.0 - max(distance(s3, v_lineA), distance(s3, v_lineB)), 0.0), 1.0);
+		float w = min(max(halfWidth + 1.0 - distance(v, s3), 0.0), 1.0);
+		float r = max(halfWidth + 0.5 - min(distance(v, v_lineA), distance(v, v_lineB)), 0.0);
+
+		gl_FragColor.a *= min(max(l * w, r), 1.0);
+	}
+	#endif // DRAW_MODE_line
 
 	if (gl_FragColor.a == 0.0)
 	{

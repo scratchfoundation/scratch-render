@@ -166,7 +166,12 @@ ShaderManager.DRAW_MODE = {
     /**
      * Draw only the parts of the drawable which match a particular color.
      */
-    colorMask: 'colorMask'
+    colorMask: 'colorMask',
+
+    /**
+     * Draw a line.
+     */
+    line: 'line'
 };
 
 module.exports = ShaderManager;

@@ -141,19 +141,91 @@ class PenSkin extends Skin {
      * @param {number} y1 - the Y coordinate of the end of the line.
      */
     drawLine (penAttributes, x0, y0, x1, y1) {
-        const ctx = this._canvas.getContext('2d');
+        // const ctx = this._canvas.getContext('2d');
 
-        this._setAttributes(ctx, penAttributes);
+        // this._setAttributes(ctx, penAttributes);
 
         // Width 1 and 3 lines need to be offset by 0.5.
         const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
         const offset = (Math.max(4 - diameter, 0) % 2) / 2;
-        ctx.beginPath();
-        ctx.moveTo(this._rotationCenter[0] + x0 + offset, this._rotationCenter[1] - y0 + offset);
-        ctx.lineTo(this._rotationCenter[0] + x1 + offset, this._rotationCenter[1] - y1 + offset);
-        ctx.stroke();
+        // ctx.beginPath();
+        // ctx.moveTo(this._rotationCenter[0] + x0 + offset, this._rotationCenter[1] - y0 + offset);
+        // ctx.lineTo(this._rotationCenter[0] + x1 + offset, this._rotationCenter[1] - y1 + offset);
+        // ctx.stroke();
 
-        this._canvasDirty = true;
+        // this._canvasDirty = true;
+
+        this._drawLineOnBuffer(
+            penAttributes,
+            this._rotationCenter[0] + x0 + offset, this._rotationCenter[1] - y0 + offset,
+            this._rotationCenter[0] + x1 + offset, this._rotationCenter[1] - y1 + offset
+        );
+
+        this._silhouetteDirty = true;
+    }
+
+    _drawLineOnBuffer (penAttributes, x0, y0, x1, y1) {
+        // console.log(x0, y0, x1, y1);
+        // if (texture !== this._texture && this._canvasDirty) {
+        //     this._drawToBuffer();
+        // }
+
+        const gl = this._renderer.gl;
+        twgl.bindFramebufferInfo(gl, this._framebuffer);
+
+        // gl.disable(gl.BLEND);
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+
+        const bounds = this._bounds;
+
+        const NO_EFFECTS = 0;
+        const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.line, NO_EFFECTS);
+
+        gl.viewport(0, 0, bounds.width, bounds.height);
+        const projection = twgl.m4.ortho(0, bounds.width, 0, bounds.height, -1, 1);
+        // console.log(bounds);
+
+        gl.useProgram(currentShader.program);
+        twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
+
+        const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
+        const length = Math.hypot(Math.abs(x1 - x0) - 0.001, Math.abs(y1 - y0) - 0.001);
+        const avgX = (x0 + x1) / 2;
+        const avgY = (y0 + y1) / 2;
+        const theta = Math.atan2(y0 - y1, x0 - x1);
+        const half = length / (length + diameter) / 2;
+        const width = Math.abs(x1 - x0) + diameter;
+        const height = Math.abs(y1 - y0) + diameter;
+
+        const uniforms = {
+            u_skin: this._texture,
+            u_projectionMatrix: projection,
+            u_modelMatrix: twgl.m4.multiply(
+                twgl.m4.translation(twgl.v3.create(avgX, avgY, 0)),
+                twgl.m4.scaling(twgl.v3.create(
+                    Math.abs(Math.cos(theta)) * (length) + 0 * (length) + diameter,
+                    Math.abs(Math.sin(theta)) * (length) + 0 * (length) + diameter,
+                    // Math.cos(theta) * (Math.abs(x1 - x0)) + Math.sin(theta) * (Math.abs(y1 - y0)) + diameter,
+                    0
+                ))
+            ),
+            u_lineA: twgl.v3.create(Math.sign(Math.cos(theta)) * (0.5 - diameter / 2 / width), Math.sign(Math.sin(theta)) * (0.5 - diameter / 2 / height)),
+            u_lineB: twgl.v3.create(Math.sign(Math.cos(theta)) * -(0.5 - diameter / 2 / width), Math.sign(Math.sin(theta)) * -(0.5 - diameter / 2 / height)),
+            u_lineWidth: diameter,
+            u_lineColor: penAttributes.color4f || DefaultPenAttributes.color4f,
+            u_fudge: 0,
+        };
+        // console.log(uniforms.u_lineA, uniforms.u_lineB);
+
+        twgl.setUniforms(currentShader, uniforms);
+
+        twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
+
+        // gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+
+        twgl.bindFramebufferInfo(gl, null);
+
         this._silhouetteDirty = true;
     }
 
