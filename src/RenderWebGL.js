@@ -172,6 +172,9 @@ class RenderWebGL extends EventEmitter {
         /** @type {HTMLCanvasElement} */
         this._tempCanvas = document.createElement('canvas');
 
+        this._regionId = null;
+        this._exitRegion = null;
+
         this._svgTextBubble = new SVGTextBubble();
 
         this._createGeometry();
@@ -1410,6 +1413,21 @@ class RenderWebGL extends EventEmitter {
         }
     }
 
+    enterDrawRegion (regionId, enter) {
+        if (this._regionId !== regionId) {
+            if (this._exitRegion !== null) {
+                this._exitRegion();
+            }
+            this._exitRegion = null;
+            this._regionId = regionId;
+            enter();
+        }
+    }
+
+    exitDrawRegion (exit) {
+        this._exitRegion = exit;
+    }
+
     /**
      * Draw a set of Drawables, by drawable ID
      * @param {Array<int>} drawables The Drawable IDs to draw, possibly this._drawList.
@@ -1456,12 +1474,14 @@ class RenderWebGL extends EventEmitter {
             effectBits &= opts.hasOwnProperty('effectMask') ? opts.effectMask : effectBits;
             const newShader = this._shaderManager.getShader(drawMode, effectBits);
 
-            currentShader = newShader;
-            gl.useProgram(currentShader.program);
-            twgl.setBuffersAndAttributes(gl, currentShader, this._bufferInfo);
-            Object.assign(uniforms, {
-                u_projectionMatrix: projection,
-                u_fudge: window.fudge || 0
+            this.enterDrawRegion(newShader, () => {
+                currentShader = newShader;
+                gl.useProgram(currentShader.program);
+                twgl.setBuffersAndAttributes(gl, currentShader, this._bufferInfo);
+                Object.assign(uniforms, {
+                    u_projectionMatrix: projection,
+                    u_fudge: window.fudge || 0
+                });
             });
 
             Object.assign(uniforms,
@@ -1482,6 +1502,8 @@ class RenderWebGL extends EventEmitter {
             twgl.setUniforms(currentShader, uniforms);
 
             twgl.drawBufferInfo(gl, this._bufferInfo, gl.TRIANGLES);
+
+            this._regionId = null;
         }
     }
 
