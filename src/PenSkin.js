@@ -67,6 +67,15 @@ class PenSkin extends Skin {
         /** @type {boolean} */
         this._silhouetteDirty = false;
 
+        /** @type {object} */
+        this._lineOnBufferDrawRegionId = {};
+
+        /** @type {object} */
+        this._toBufferDrawRegionId = {};
+
+        /** @type {object} */
+        this._silhouetteDrawRegionId = {};
+
         this.onNativeSizeChanged = this.onNativeSizeChanged.bind(this);
         this._renderer.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
 
@@ -184,11 +193,11 @@ class PenSkin extends Skin {
         const NO_EFFECTS = 0;
         const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.line, NO_EFFECTS);
 
-        this._renderer.enterDrawRegion(this, () => {
+        this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId, () => {
             twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-            // gl.disable(gl.BLEND);
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+            gl.disable(gl.BLEND);
+            // gl.blendFuncSeparate(gl.ONE, gl.ZERO, gl.ONE, gl.ZERO);
 
             gl.viewport(0, 0, bounds.width, bounds.height);
             // console.log(bounds);
@@ -235,8 +244,8 @@ class PenSkin extends Skin {
         twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
 
         this._renderer.exitDrawRegion(() => {
-            // gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+            gl.enable(gl.BLEND);
+            // gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
 
             twgl.bindFramebufferInfo(gl, null);
         });
@@ -251,6 +260,7 @@ class PenSkin extends Skin {
      * @param {number} y - the Y coordinate of the stamp to draw.
      */
     drawStamp (stampElement, x, y) {
+        console.log('drawStamp');
         const ctx = this._canvas.getContext('2d');
 
         ctx.drawImage(stampElement, this._rotationCenter[0] + x, this._rotationCenter[1] - y);
@@ -259,14 +269,23 @@ class PenSkin extends Skin {
         this._silhouetteDirty = true;
     }
 
+    _drawRectangleRegionEnter (regionId, currentShader, bounds, enter) {
+        this._renderer.enterDrawRegion(regionId, () => {
+            enter();
+
+            const gl = this._renderer.gl;
+
+            gl.viewport(0, 0, bounds.width, bounds.height);
+
+            gl.useProgram(currentShader.program);
+            twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
+        });
+    }
+
     _drawRectangle (currentShader, texture, bounds, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
         const gl = this._renderer.gl;
 
-        gl.viewport(0, 0, bounds.width, bounds.height);
         const projection = twgl.m4.ortho(bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1);
-
-        gl.useProgram(currentShader.program);
-        twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
 
         const uniforms = {
             u_skin: texture,
@@ -284,17 +303,17 @@ class PenSkin extends Skin {
         twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
     }
 
+    _drawRectangleRegionExit (exit) {
+        this._renderer.exitDrawRegion(exit);
+    }
+
     _drawToBuffer (texture = this._texture, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
         if (texture !== this._texture && this._canvasDirty) {
+            console.log('_canvasDirty');
             this._drawToBuffer();
         }
 
         const gl = this._renderer.gl;
-        twgl.bindFramebufferInfo(gl, this._framebuffer);
-
-        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
-
-        const bounds = this._bounds;
 
         if (texture === this._texture) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -309,11 +328,21 @@ class PenSkin extends Skin {
         const NO_EFFECTS = 0;
         const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
 
+        const bounds = this._bounds;
+
+        this._drawRectangleRegionEnter(this._toBufferDrawRegionId, currentShader, bounds, () => {
+            twgl.bindFramebufferInfo(gl, this._framebuffer);
+
+            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+        });
+
         this._drawRectangle(currentShader, texture, bounds, x, y);
 
-        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+        this._drawRectangleRegionExit(() => {
+            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
 
-        twgl.bindFramebufferInfo(gl, null);
+            twgl.bindFramebufferInfo(gl, null);
+        });
 
         this._silhouetteDirty = true;
     }
@@ -344,9 +373,6 @@ class PenSkin extends Skin {
         this._rotationCenter[0] = width / 2;
         this._rotationCenter[1] = height / 2;
 
-        if (this._texture !== null) {
-            this._renderer.gl.deleteTexture(this._texture);
-        }
         this._texture = twgl.createTexture(
             gl,
             {
@@ -423,12 +449,6 @@ class PenSkin extends Skin {
 
             // Render export texture to another framebuffer
             const gl = this._renderer.gl;
-            twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
-
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-
-            gl.disable(gl.BLEND);
 
             const bounds = this._bounds;
             const texture = this._exportTexture;
@@ -436,11 +456,22 @@ class PenSkin extends Skin {
             const NO_EFFECTS = 0;
             const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
 
+            this._drawRectangleRegionEnter(this._silhouetteDrawRegionId, currentShader, bounds, () => {
+                twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
+
+                gl.disable(gl.BLEND);
+            });
+
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
             this._drawRectangle(currentShader, texture, bounds);
 
-            gl.enable(gl.BLEND);
+            this._drawRectangleRegionExit(() => {
+                gl.enable(gl.BLEND);
 
-            twgl.bindFramebufferInfo(gl, null);
+                twgl.bindFramebufferInfo(gl, null);
+            });
 
             // Sample the framebuffer's pixels into the silhouette instance
             const skinPixels = new Uint8Array(Math.floor(this._canvas.width * this._canvas.height * 4));

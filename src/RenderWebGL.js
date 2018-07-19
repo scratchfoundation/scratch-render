@@ -576,6 +576,8 @@ class RenderWebGL extends EventEmitter {
      * Draw all current drawables and present the frame on the canvas.
      */
     draw () {
+        this._doExitDrawRegion();
+
         const gl = this._gl;
 
         twgl.bindFramebufferInfo(gl, null);
@@ -732,6 +734,8 @@ class RenderWebGL extends EventEmitter {
     }
 
     _isTouchingColorGpuStart (drawableID, candidateIDs, bounds, color3b, mask3b) {
+        this._doExitDrawRegion();
+
         const gl = this._gl;
         twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
@@ -1000,6 +1004,8 @@ class RenderWebGL extends EventEmitter {
      * @return {?DrawableExtraction} Data about the picked drawable
      */
     extractDrawable (drawableID, x, y) {
+        this._doExitDrawRegion();
+
         const drawable = this._allDrawables[drawableID];
         if (!drawable) return null;
 
@@ -1080,6 +1086,8 @@ class RenderWebGL extends EventEmitter {
      * @return {?ColorExtraction} Data about the picked color
      */
     extractColor (x, y, radius) {
+        this._doExitDrawRegion();
+
         const scratchX = Math.round(this._nativeSize[0] * ((x / this._gl.canvas.clientWidth) - 0.5));
         const scratchY = Math.round(-this._nativeSize[1] * ((y / this._gl.canvas.clientHeight) - 0.5));
 
@@ -1316,6 +1324,8 @@ class RenderWebGL extends EventEmitter {
      * @param {int} stampID - the unique ID of the Drawable to use as the stamp.
      */
     penStamp (penSkinID, stampID) {
+        this._doExitDrawRegion();
+
         const stampDrawable = this._allDrawables[stampID];
         if (!stampDrawable) {
             return;
@@ -1415,10 +1425,7 @@ class RenderWebGL extends EventEmitter {
 
     enterDrawRegion (regionId, enter) {
         if (this._regionId !== regionId) {
-            if (this._exitRegion !== null) {
-                this._exitRegion();
-            }
-            this._exitRegion = null;
+            this._doExitDrawRegion();
             this._regionId = regionId;
             enter();
         }
@@ -1426,6 +1433,13 @@ class RenderWebGL extends EventEmitter {
 
     exitDrawRegion (exit) {
         this._exitRegion = exit;
+    }
+
+    _doExitDrawRegion() {
+        if (this._exitRegion !== null) {
+            this._exitRegion();
+        }
+        this._exitRegion = null;
     }
 
     /**
