@@ -171,15 +171,15 @@ void main()
 		vec2 s3 = s0 * c + v_lineB;
 		// vec2 s3A = s3 - v_lineA;
 		// vec2 s3B = s3 - v_lineB;
-		// float l = min(max(dot(s0, s0) - max(dot(s3A, s3A), dot(s3B, s3B)), 0.0), 1.0);
-
+		// float l = min(max(dot(s0, s0) + 1.0 - max(dot(s3A, s3A), dot(s3B, s3B)), 0.0), 1.0);
+        //
 		// float halfWidthSq = u_lineWidth * u_lineWidth / 2.0 / 2.0;
 		// vec2 vs3 = v - s3;
-		// float w = max(halfWidthSq - dot(vs3, vs3), 0.0);
-
+		// float w = max(halfWidthSq + 1.0 - dot(vs3, vs3), 0.0);
+        //
 		// vec2 vlA = v - v_lineA;
 		// vec2 vlB = v - v_lineB;
-		// float r = max(halfWidthSq - min(dot(vlA, vlA), dot(vlB, vlB)), 0.0);
+		// float r = max(halfWidthSq + 0.5 - min(dot(vlA, vlA), dot(vlB, vlB)), 0.0);
 
 		float halfWidth = u_lineWidth / 2.0;
 		float l = min(max(length(s0) + 1.0 - max(distance(s3, v_lineA), distance(s3, v_lineB)), 0.0), 1.0);

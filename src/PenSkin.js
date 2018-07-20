@@ -31,6 +31,9 @@ const __modelScalingMatrix = twgl.m4.identity();
 const __modelMatrix = twgl.m4.identity();
 
 const __modelTranslationVector = twgl.v3.create();
+const __modelScalingVector = twgl.v3.create();
+const __lineAVector = twgl.v3.create();
+const __lineBVector = twgl.v3.create();
 
 class PenSkin extends Skin {
     /**
@@ -196,22 +199,30 @@ class PenSkin extends Skin {
         this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId, () => {
             twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-            gl.disable(gl.BLEND);
-            // gl.blendFuncSeparate(gl.ONE, gl.ZERO, gl.ONE, gl.ZERO);
+            // gl.disable(gl.BLEND);
+            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
 
             gl.viewport(0, 0, bounds.width, bounds.height);
             // console.log(bounds);
 
             gl.useProgram(currentShader.program);
             twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
+
+            const uniforms = {
+                u_skin: this._texture,
+                u_projectionMatrix: projection,
+                u_fudge: 0,
+            };
+
+            twgl.setUniforms(currentShader, uniforms);
         });
 
         const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
         const length = Math.hypot(Math.abs(x1 - x0) - 0.001, Math.abs(y1 - y0) - 0.001);
         const avgX = (x0 + x1) / 2;
         const avgY = (y0 + y1) / 2;
-        const theta = Math.atan2(y0 - y1, x0 - x1);
-        const half = length / (length + diameter) / 2;
+        // const theta = Math.atan2(y0 - y1, x0 - x1);
+        // const half = length / (length + diameter) / 2;
         const width = Math.abs(x1 - x0) + diameter;
         const height = Math.abs(y1 - y0) + diameter;
 
@@ -219,23 +230,32 @@ class PenSkin extends Skin {
         translationVector[0] = avgX;
         translationVector[1] = avgY;
 
+        const cos = (x1 - x0) / length;
+        const sin = (y1 - y0) / length;
+        const radius = diameter / 2;
+
+        const scalingVector = __modelScalingVector;
+        scalingVector[0] = Math.abs(cos) * (length) + diameter;
+        scalingVector[1] = Math.abs(sin) * (length) + diameter;
+
+        const lineA = __lineAVector;
+        lineA[0] = Math.sign(cos) * (0.5 - radius / width);
+        lineA[1] = Math.sign(sin) * (0.5 - radius / height);
+
+        const lineB = __lineBVector;
+        lineB[0] = Math.sign(cos) * -(0.5 - radius / width);
+        lineB[1] = Math.sign(sin) * -(0.5 - radius / height);
+
         const uniforms = {
-            u_skin: this._texture,
-            u_projectionMatrix: projection,
             u_modelMatrix: twgl.m4.multiply(
                 twgl.m4.translation(translationVector, __modelTranslationMatrix),
-                twgl.m4.scaling(twgl.v3.create(
-                    Math.abs(Math.cos(theta)) * (length) + diameter,
-                    Math.abs(Math.sin(theta)) * (length) + diameter,
-                    0
-                ), __modelScalingMatrix),
+                twgl.m4.scaling(scalingVector, __modelScalingMatrix),
                 __modelMatrix
             ),
-            u_lineA: twgl.v3.create(Math.sign(Math.cos(theta)) * (0.5 - diameter / 2 / width), Math.sign(Math.sin(theta)) * (0.5 - diameter / 2 / height)),
-            u_lineB: twgl.v3.create(Math.sign(Math.cos(theta)) * -(0.5 - diameter / 2 / width), Math.sign(Math.sin(theta)) * -(0.5 - diameter / 2 / height)),
+            u_lineA: lineA,
+            u_lineB: lineB,
             u_lineWidth: diameter,
             u_lineColor: penAttributes.color4f || DefaultPenAttributes.color4f,
-            u_fudge: 0,
         };
         // console.log(uniforms.u_lineA, uniforms.u_lineB);
 
@@ -244,8 +264,8 @@ class PenSkin extends Skin {
         twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
 
         this._renderer.exitDrawRegion(() => {
-            gl.enable(gl.BLEND);
-            // gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+            // gl.enable(gl.BLEND);
+            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
 
             twgl.bindFramebufferInfo(gl, null);
         });
