@@ -169,12 +169,7 @@ ShaderManager.DRAW_MODE = {
     colorMask: 'colorMask',
 
     /**
-     * Draw a line.
-     */
-    line: 'line',
-
-    /**
-     * Sample a texture to draw a line with caps.
+     * Sample a "texture" to draw a line with caps.
      */
     lineSample: 'lineSample'
 };
