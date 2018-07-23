@@ -69,6 +69,9 @@ class PenSkin extends Skin {
         this._silhouetteBuffer = null;
 
         /** @type {boolean} */
+        this._canvasDirty = false;
+
+        /** @type {boolean} */
         this._silhouetteDirty = false;
 
         /** @type {object} */
