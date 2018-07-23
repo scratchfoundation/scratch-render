@@ -25,16 +25,48 @@ const DefaultPenAttributes = {
     diameter: 1
 };
 
+
+/**
+ * Reused memory location for projection matrices.
+ * @type {FloatArray}
+ */
 const __projectionMatrix = twgl.m4.identity();
+
+/**
+ * Reused memory location for translation matrix for building a model matrix.
+ * @type {FloatArray}
+ */
 const __modelTranslationMatrix = twgl.m4.identity();
+
+/**
+ * Reused memory location for rotation matrix for building a model matrix.
+ * @type {FloatArray}
+ */
 const __modelRotationMatrix = twgl.m4.identity();
+
+/**
+ * Reused memory location for scaling matrix for building a model matrix.
+ * @type {FloatArray}
+ */
 const __modelScalingMatrix = twgl.m4.identity();
+
+/**
+ * Reused memory location for a model matrix.
+ * @type {FloatArray}
+ */
 const __modelMatrix = twgl.m4.identity();
 
+/**
+ * Reused memory location for a vector to create a translation matrix from.
+ * @type {FloatArray}
+ */
 const __modelTranslationVector = twgl.v3.create();
+
+/**
+ * Reused memory location for a vector to create a scaling matrix from.
+ * @type {FloatArray}
+ */
 const __modelScalingVector = twgl.v3.create();
-const __lineAVector = twgl.v3.create();
-const __lineBVector = twgl.v3.create();
 
 class PenSkin extends Skin {
     /**
@@ -82,6 +114,9 @@ class PenSkin extends Skin {
 
         /** @type {object} */
         this._silhouetteDrawRegionId = {};
+
+        /** @type {twgl.BufferInfo} */
+        this._lineBufferInfo = null;
 
         this._createLineGeometry();
 
@@ -183,7 +218,18 @@ class PenSkin extends Skin {
      * Create 2D geometry for drawing lines to a framebuffer.
      */
     _createLineGeometry () {
-        const quad = {
+        // Create a set of triangulated quads that break up a line into 3 parts:
+        // 2 caps and a body. The y component of these position vertices are
+        // divided to bring a value of 1 down to 0.5 to 0. The large y values
+        // are set so they will still be at least 0.5 after division. The
+        // divisor is scaled based on the length of the line and the lines
+        // width.
+        //
+        // Texture coordinates are based on a "generated" texture whose general
+        // shape is a circle. The line caps set their texture values to define
+        // there roundedness with the texture. The body has all of its texture
+        // valeus set to the center of the texture so its a solid block.
+        const quads = {
             a_position: {
                 numComponents: 2,
                 data: [
@@ -241,8 +287,8 @@ class PenSkin extends Skin {
                 ]
             }
         };
-        this._lineBufferPositions = quad.a_position.data;
-        this._lineBufferInfo = twgl.createBufferInfoFromArrays(this._renderer.gl, quad);
+
+        this._lineBufferInfo = twgl.createBufferInfoFromArrays(this._renderer.gl, quads);
     }
 
     /**
@@ -265,6 +311,8 @@ class PenSkin extends Skin {
         this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId, () => {
             twgl.bindFramebufferInfo(gl, this._framebuffer);
 
+            // Needs a blend function that blends a destination that starts with
+            // no alpha.
             gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
 
             gl.viewport(0, 0, bounds.width, bounds.height);
@@ -379,14 +427,26 @@ class PenSkin extends Skin {
     _drawRectangle (currentShader, texture, bounds, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
         const gl = this._renderer.gl;
 
-        const projection = twgl.m4.ortho(bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1);
+        const projection = twgl.m4.ortho(
+            bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1,
+            __projectionMatrix
+        );
 
         const uniforms = {
             u_skin: texture,
             u_projectionMatrix: projection,
             u_modelMatrix: twgl.m4.multiply(
-                twgl.m4.translation(twgl.v3.create(-x - (bounds.width / 2), -y + (bounds.height / 2), 0)),
-                twgl.m4.scaling(twgl.v3.create(bounds.width, bounds.height, 0))
+                twgl.m4.translation(twgl.v3.create(
+                    -x - (bounds.width / 2),
+                    -y + (bounds.height / 2),
+                    0
+                ), __modelTranslationMatrix),
+                twgl.m4.scaling(twgl.v3.create(
+                    bounds.width,
+                    bounds.height,
+                    0
+                ), __modelScalingMatrix),
+                __modelMatrix
             ),
             u_fudge: 0
         };
