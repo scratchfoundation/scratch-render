@@ -6,8 +6,6 @@ const Skin = require('./Skin');
 const Rectangle = require('./Rectangle');
 const ShaderManager = require('./ShaderManager');
 
-const lineSample = require('!!url-loader!./shaders/line-sample.png');
-
 /**
  * Attributes to use when drawing with the pen
  * @typedef {object} PenSkin#PenAttributes
@@ -82,28 +80,6 @@ class PenSkin extends Skin {
         /** @type {object} */
         this._silhouetteDrawRegionId = {};
 
-        const lineSampleImg = new Image();
-        lineSampleImg.src = lineSample;
-        /** @type {WebGLTexture} */
-        const lineCanvas = document.createElement('canvas');
-        lineCanvas.width = 256;
-        lineCanvas.height = 256;
-        const lineContext = lineCanvas.getContext('2d');
-        lineContext.fillStyle = 'black';
-        lineContext.fillRect(0, 0, 256, 256);
-        this._lineTexture = twgl.createTexture(this._renderer.gl, {
-            wrap: this._renderer.gl.CLAMP_TO_EDGE,
-            src: lineCanvas
-        });
-        lineSampleImg.onload = () => {
-            console.log('onload');
-            this._renderer.gl.deleteTexture(this._lineTexture);
-            this._lineTexture = twgl.createTexture(this._renderer.gl, {
-                wrap: this._renderer.gl.CLAMP_TO_EDGE,
-                src: lineSampleImg
-            });
-        };
-
         this._createLineGeometry();
 
         this.onNativeSizeChanged = this.onNativeSizeChanged.bind(this);
@@ -118,6 +94,7 @@ class PenSkin extends Skin {
     dispose () {
         this._renderer.removeListener(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
         this._renderer.gl.deleteTexture(this._texture);
+        this._renderer.gl.deleteTexture(this._exportTexture);
         this._texture = null;
         super.dispose();
     }
@@ -186,21 +163,11 @@ class PenSkin extends Skin {
      * @param {number} y1 - the Y coordinate of the end of the line.
      */
     drawLine (penAttributes, x0, y0, x1, y1) {
-        // const ctx = this._canvas.getContext('2d');
-
-        // this._setAttributes(ctx, penAttributes);
-
         // Width 1 and 3 lines need to be offset by 0.5.
         const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
         const offset = (Math.max(4 - diameter, 0) % 2) / 2;
-        // ctx.beginPath();
-        // ctx.moveTo(this._rotationCenter[0] + x0 + offset, this._rotationCenter[1] - y0 + offset);
-        // ctx.lineTo(this._rotationCenter[0] + x1 + offset, this._rotationCenter[1] - y1 + offset);
-        // ctx.stroke();
 
-        // this._canvasDirty = true;
-
-        this._drawArrayLineOnBuffer(
+        this._drawLineOnBuffer(
             penAttributes,
             this._rotationCenter[0] + x0 + offset, this._rotationCenter[1] - y0 + offset,
             this._rotationCenter[0] + x1 + offset, this._rotationCenter[1] - y1 + offset
@@ -209,97 +176,9 @@ class PenSkin extends Skin {
         this._silhouetteDirty = true;
     }
 
-    _drawLineOnBuffer (penAttributes, x0, y0, x1, y1) {
-        // console.log(x0, y0, x1, y1);
-        // if (texture !== this._texture && this._canvasDirty) {
-        //     this._drawToBuffer();
-        // }
-
-        const gl = this._renderer.gl;
-
-        const bounds = this._bounds;
-        const projection = twgl.m4.ortho(0, bounds.width, 0, bounds.height, -1, 1, __projectionMatrix);
-
-        const NO_EFFECTS = 0;
-        const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.line, NO_EFFECTS);
-
-        this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId, () => {
-            twgl.bindFramebufferInfo(gl, this._framebuffer);
-
-            // gl.disable(gl.BLEND);
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
-
-            gl.viewport(0, 0, bounds.width, bounds.height);
-            // console.log(bounds);
-
-            gl.useProgram(currentShader.program);
-            twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
-
-            const uniforms = {
-                u_skin: this._texture,
-                u_projectionMatrix: projection,
-                u_fudge: 0,
-            };
-
-            twgl.setUniforms(currentShader, uniforms);
-        });
-
-        const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
-        const length = Math.hypot(Math.abs(x1 - x0) - 0.001, Math.abs(y1 - y0) - 0.001);
-        const avgX = (x0 + x1) / 2;
-        const avgY = (y0 + y1) / 2;
-        // const theta = Math.atan2(y0 - y1, x0 - x1);
-        // const half = length / (length + diameter) / 2;
-        const width = Math.abs(x1 - x0) + diameter;
-        const height = Math.abs(y1 - y0) + diameter;
-
-        const translationVector = __modelTranslationVector;
-        translationVector[0] = avgX;
-        translationVector[1] = avgY;
-
-        const cos = (x1 - x0) / length;
-        const sin = (y1 - y0) / length;
-        const radius = diameter / 2;
-
-        const scalingVector = __modelScalingVector;
-        scalingVector[0] = Math.abs(cos) * (length) + diameter;
-        scalingVector[1] = Math.abs(sin) * (length) + diameter;
-
-        const lineA = __lineAVector;
-        lineA[0] = Math.sign(cos) * (0.5 - radius / width);
-        lineA[1] = Math.sign(sin) * (0.5 - radius / height);
-
-        const lineB = __lineBVector;
-        lineB[0] = Math.sign(cos) * -(0.5 - radius / width);
-        lineB[1] = Math.sign(sin) * -(0.5 - radius / height);
-
-        const uniforms = {
-            u_modelMatrix: twgl.m4.multiply(
-                twgl.m4.translation(translationVector, __modelTranslationMatrix),
-                twgl.m4.scaling(scalingVector, __modelScalingMatrix),
-                __modelMatrix
-            ),
-            u_lineA: lineA,
-            u_lineB: lineB,
-            u_lineWidth: diameter,
-            u_lineColor: penAttributes.color4f || DefaultPenAttributes.color4f,
-        };
-        // console.log(uniforms.u_lineA, uniforms.u_lineB);
-
-        twgl.setUniforms(currentShader, uniforms);
-
-        twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
-
-        this._renderer.exitDrawRegion(() => {
-            // gl.enable(gl.BLEND);
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
-
-            twgl.bindFramebufferInfo(gl, null);
-        });
-
-        this._silhouetteDirty = true;
-    }
-
+    /**
+     * Create 2D geometry for drawing lines to a framebuffer.
+     */
     _createLineGeometry () {
         const quad = {
             a_position: {
@@ -333,30 +212,6 @@ class PenSkin extends Skin {
             a_texCoord: {
                 numComponents: 2,
                 data: [
-                    // 1, 0.5,
-                    // 0, 0.5,
-                    // 1, 0,
-                    //
-                    // 1, 0,
-                    // 0, 0.5,
-                    // 0, 0,
-                    //
-                    // 1, 0.5,
-                    // 0, 0.5,
-                    // 1, 1,
-                    //
-                    // 1, 1,
-                    // 0, 0.5,
-                    // 0, 1,
-                    //
-                    // 1, 0,
-                    // 0, 0,
-                    // 1, 0.5,
-                    //
-                    // 1, 0.5,
-                    // 0, 0,
-                    // 0, 0.5
-
                     1, 0.5,
                     0, 0.5,
                     1, 0,
@@ -385,11 +240,17 @@ class PenSkin extends Skin {
         };
         this._lineBufferPositions = quad.a_position.data;
         this._lineBufferInfo = twgl.createBufferInfoFromArrays(this._renderer.gl, quad);
-        // this._lineBufferInfo.attribs.a_position.buffer = this._renderer.gl.createBuffer();
-        console.log(this._lineBufferInfo);
     }
 
-    _drawArrayLineOnBuffer (penAttributes, x0, y0, x1, y1) {
+    /**
+     * Draw a line on the framebuffer.
+     * @param {PenAttributes} penAttributes - how the line should be drawn.
+     * @param {number} x0 - the X coordinate of the beginning of the line.
+     * @param {number} y0 - the Y coordinate of the beginning of the line.
+     * @param {number} x1 - the X coordinate of the end of the line.
+     * @param {number} y1 - the Y coordinate of the end of the line.
+     */
+    _drawLineOnBuffer (penAttributes, x0, y0, x1, y1) {
         const gl = this._renderer.gl;
 
         const bounds = this._bounds;
@@ -401,25 +262,18 @@ class PenSkin extends Skin {
         this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId, () => {
             twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-            // gl.disable(gl.BLEND);
             gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
 
             gl.viewport(0, 0, bounds.width, bounds.height);
-            // console.log(bounds);
 
             gl.useProgram(currentShader.program);
 
             twgl.setBuffersAndAttributes(gl, currentShader, this._lineBufferInfo);
-            // twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
-
-            gl.bindTexture(gl.TEXTURE_2D, this._lineTexture);
-
-            twgl.setTextureParameters(gl, this._lineTexture, {minMag: gl.LINEAR});
 
             const uniforms = {
-                u_skin: this._lineTexture,
+                u_skin: this._texture,
                 u_projectionMatrix: projection,
-                u_fudge: 0,
+                u_fudge: 0
             };
 
             twgl.setUniforms(currentShader, uniforms);
@@ -430,76 +284,38 @@ class PenSkin extends Skin {
         const avgX = (x0 + x1) / 2;
         const avgY = (y0 + y1) / 2;
         const theta = Math.atan2(y0 - y1, x0 - x1);
-        // const half = length / (length + diameter) / 2;
-        // const width = Math.abs(x1 - x0) + diameter;
-        // const height = Math.abs(y1 - y0) + diameter;
 
         const translationVector = __modelTranslationVector;
         translationVector[0] = avgX;
         translationVector[1] = avgY;
 
-        // const cos = (x1 - x0) / length;
-        const sin = (y1 - y0) / length;
-        const radius = diameter / 2;
-
         const scalingVector = __modelScalingVector;
         scalingVector[0] = diameter;
         scalingVector[1] = length + diameter;
 
-        const lineA = __lineAVector;
-        // lineA[0] = Math.sign(cos) * (0.5 - radius / width);
-        lineA[1] = (0.50001 - radius / (length + diameter));
-
-        // const lineB = __lineBVector;
-        // lineB[0] = Math.sign(cos) * -(0.5 - radius / width);
-        // lineB[1] = Math.sign(sin) * -(0.5 - radius / height);
-
-        // const positions = this._lineBufferPositions;
-
-        // positions[1] = lineB[1];
-        // positions[3] = lineB[1];
-        // positions[9] = lineB[1];
-        //
-        // positions[13] = lineA[1];
-        // positions[15] = lineA[1];
-        // positions[17] = lineB[1];
-        //
-        // positions[19] = lineB[1];
-        // positions[21] = lineA[1];
-        // positions[23] = lineB[1];
-        //
-        // positions[29] = lineA[1];
-        // positions[31] = lineA[1];
-        // positions[35] = lineA[1];
-
-        // gl.bindBuffer(gl.ARRAY_BUFFER, this._lineBufferInfo.attribs.a_position.buffer);
-        // gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
+        const radius = diameter / 2;
+        const yScalar = (0.50001 - (radius / (length + diameter)));
 
         const uniforms = {
-            u_positionScalar: lineA[1],
+            u_positionScalar: yScalar,
             u_capScale: diameter,
             u_modelMatrix: twgl.m4.multiply(
                 twgl.m4.multiply(
                     twgl.m4.translation(translationVector, __modelTranslationMatrix),
-                    twgl.m4.rotationZ(theta - Math.PI / 2, __modelRotationMatrix),
+                    twgl.m4.rotationZ(theta - (Math.PI / 2), __modelRotationMatrix),
                     __modelMatrix
                 ),
                 twgl.m4.scaling(scalingVector, __modelScalingMatrix),
                 __modelMatrix
             ),
-            u_lineColor: penAttributes.color4f || DefaultPenAttributes.color4f,
+            u_lineColor: penAttributes.color4f || DefaultPenAttributes.color4f
         };
 
         twgl.setUniforms(currentShader, uniforms);
 
-        // console.log(this._renderer._bufferInfo, _bufferInfo);
-        // twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
-
         twgl.drawBufferInfo(gl, this._lineBufferInfo, gl.TRIANGLES);
-        // twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
 
-        this._renderer.exitDrawRegion(() => {;
-            // gl.enable(gl.BLEND);
+        this._renderer.exitDrawRegion(() => {
             gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
 
             twgl.bindFramebufferInfo(gl, null);
@@ -515,7 +331,6 @@ class PenSkin extends Skin {
      * @param {number} y - the Y coordinate of the stamp to draw.
      */
     drawStamp (stampElement, x, y) {
-        console.log('drawStamp');
         const ctx = this._canvas.getContext('2d');
 
         ctx.drawImage(stampElement, this._rotationCenter[0] + x, this._rotationCenter[1] - y);
@@ -524,6 +339,18 @@ class PenSkin extends Skin {
         this._silhouetteDirty = true;
     }
 
+    /**
+     * Enter a draw region to draw a rectangle.
+     *
+     * Multiple calls with the same regionId skip the callback reducing the
+     * amount of GL state changes.
+     * @param {any} regionId - id of the draw region
+     * @param {twgl.ProgramInfo} currentShader - program info to draw rectangle
+     *   with
+     * @param {Rectangle} bounds - viewport bounds to draw in
+     * @param {function} enter - secondary call to make when entering the draw
+     *   region
+     */
     _drawRectangleRegionEnter (regionId, currentShader, bounds, enter) {
         this._renderer.enterDrawRegion(regionId, () => {
             enter();
@@ -537,6 +364,15 @@ class PenSkin extends Skin {
         });
     }
 
+    /**
+     * Draw a rectangle.
+     * @param {twgl.ProgramInfo} currentShader - program info to draw rectangle
+     *   with
+     * @param {WebGLTexture} texture - texture to draw
+     * @param {Rectangle} bounds - bounded area to draw in
+     * @param {number} x - centered at x
+     * @param {number} y - centered at y
+     */
     _drawRectangle (currentShader, texture, bounds, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
         const gl = this._renderer.gl;
 
@@ -546,10 +382,10 @@ class PenSkin extends Skin {
             u_skin: texture,
             u_projectionMatrix: projection,
             u_modelMatrix: twgl.m4.multiply(
-                twgl.m4.translation(twgl.v3.create(-x - bounds.width / 2, -y + bounds.height / 2, 0)),
+                twgl.m4.translation(twgl.v3.create(-x - (bounds.width / 2), -y + (bounds.height / 2), 0)),
                 twgl.m4.scaling(twgl.v3.create(bounds.width, bounds.height, 0))
             ),
-            u_fudge: 0,
+            u_fudge: 0
         };
 
         twgl.setTextureParameters(gl, texture, {minMag: gl.NEAREST});
@@ -558,18 +394,30 @@ class PenSkin extends Skin {
         twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
     }
 
+    /**
+     * Exit a draw region registering an exit handle when a different draw
+     * region is about to be entered.
+     * @param {function} exit - exit region handle
+     */
     _drawRectangleRegionExit (exit) {
         this._renderer.exitDrawRegion(exit);
     }
 
+    /**
+     * Draw the input texture to the framebuffer.
+     * @param {WebGLTexture} texture - input texture to draw
+     * @param {number} x - texture centered at x
+     * @param {number} y - texture centered at y
+     */
     _drawToBuffer (texture = this._texture, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
         if (texture !== this._texture && this._canvasDirty) {
-            console.log('_canvasDirty');
             this._drawToBuffer();
         }
 
         const gl = this._renderer.gl;
 
+        // If the input texture is the one that represents the pen's canvas
+        // layer, update the texture with the canvas data.
         if (texture === this._texture) {
             gl.bindTexture(gl.TEXTURE_2D, texture);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
@@ -647,7 +495,7 @@ class PenSkin extends Skin {
                 min: gl.NEAREST,
                 wrap: gl.CLAMP_TO_EDGE,
                 width,
-                height,
+                height
             }
         );
 
@@ -655,7 +503,7 @@ class PenSkin extends Skin {
             {
                 format: gl.RGBA,
                 attachment: this._exportTexture
-            },
+            }
         ];
         if (this._framebuffer) {
             twgl.resizeFramebufferInfo(gl, this._framebuffer, attachments, width, height);

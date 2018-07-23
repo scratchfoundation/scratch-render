@@ -172,7 +172,10 @@ class RenderWebGL extends EventEmitter {
         /** @type {HTMLCanvasElement} */
         this._tempCanvas = document.createElement('canvas');
 
+        /** @type {any} */
         this._regionId = null;
+
+        /** @type {function} */
         this._exitRegion = null;
 
         this._svgTextBubble = new SVGTextBubble();
@@ -1423,6 +1426,20 @@ class RenderWebGL extends EventEmitter {
         }
     }
 
+    /**
+     * Enter a draw region.
+     *
+     * A draw region is where multiple draw operations are performed with the
+     * same GL state. WebGL performs poorly when it changes state like blend
+     * mode. Marking a collection of state values as a "region" the renderer
+     * can skip superfluous extra state calls when it is already in that
+     * region. Since one region may be entered from within another a exit
+     * handle can also be registered that is called when a new region is about
+     * to be entered to restore a common inbetween state.
+     *
+     * @param {any} regionId - id of the region to enter
+     * @param {function} enter - handle to call when first entering a region
+     */
     enterDrawRegion (regionId, enter) {
         if (this._regionId !== regionId) {
             this._doExitDrawRegion();
@@ -1431,11 +1448,19 @@ class RenderWebGL extends EventEmitter {
         }
     }
 
+    /**
+     * Register a exit handle when a new region will be entered.
+     * @param {function} exit - handle to call when about to enter a new region
+     */
     exitDrawRegion (exit) {
         this._exitRegion = exit;
     }
 
-    _doExitDrawRegion() {
+    /**
+     * Forcefully exit the current region returning to a common inbetween GL
+     * state.
+     */
+    _doExitDrawRegion () {
         if (this._exitRegion !== null) {
             this._exitRegion();
         }
@@ -1488,7 +1513,12 @@ class RenderWebGL extends EventEmitter {
             effectBits &= opts.hasOwnProperty('effectMask') ? opts.effectMask : effectBits;
             const newShader = this._shaderManager.getShader(drawMode, effectBits);
 
-            this.enterDrawRegion(newShader, () => {
+            // Manually perform region check. Do not create functions inside a
+            // loop.
+            if (this._regionId !== newShader) {
+                this._doExitDrawRegion();
+                this._regionId = newShader;
+
                 currentShader = newShader;
                 gl.useProgram(currentShader.program);
                 twgl.setBuffersAndAttributes(gl, currentShader, this._bufferInfo);
@@ -1496,7 +1526,7 @@ class RenderWebGL extends EventEmitter {
                     u_projectionMatrix: projection,
                     u_fudge: window.fudge || 0
                 });
-            });
+            }
 
             Object.assign(uniforms,
                 drawable.skin.getUniforms(drawableScale),
