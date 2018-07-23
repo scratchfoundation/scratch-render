@@ -47,6 +47,11 @@ uniform float u_lineWidth;
 varying vec2 v_position;
 #endif // DRAW_MODE_line
 
+#ifdef DRAW_MODE_lineSample
+uniform vec4 u_lineColor;
+uniform float u_capScale;
+#endif // DRAW_MODE_lineSample
+
 uniform sampler2D u_skin;
 
 varying vec2 v_texCoord;
@@ -160,6 +165,15 @@ void main()
 	#endif // ENABLE_fisheye
 
 	gl_FragColor = texture2D(u_skin, texcoord0);
+
+	#ifdef DRAW_MODE_lineSample
+	{
+		gl_FragColor = u_lineColor;
+		gl_FragColor.a *= texture2D(u_skin, texcoord0).a;
+		gl_FragColor.a *= clamp(u_capScale + 1.0 - 2.0 * u_capScale * distance(texcoord0, vec2(0.5, 0.5)), 0.0, 1.0);
+		// gl_FragColor.a *= texcoord0.y;
+	}
+	#endif
 
 	#else // DRAW_MODE_line
 	{

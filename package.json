@@ -54,6 +54,7 @@
     "raw-loader": "^0.5.1",
     "scratch-storage": "^0.4.0",
     "scratch-svg-renderer": "0.2.0-prerelease.20180712223402",
-    "twgl.js": "4.4.0"
+    "twgl.js": "4.4.0",
+    "url-loader": "^1.0.1"
   }
 }
