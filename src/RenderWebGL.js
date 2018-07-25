@@ -794,13 +794,14 @@ class RenderWebGL extends EventEmitter {
     }
 
     /**
-     * Detect which sprite, if any, is at the given location. This function will not
-     * pick drawables that are not visible or have ghost set all the way up.
+     * Detect which sprite, if any, is at the given location.
+     * This function will pick all drawables that are visible, unless specific
+     * candidate drawable IDs are provided.
      * @param {int} centerX The client x coordinate of the picking location.
      * @param {int} centerY The client y coordinate of the picking location.
      * @param {int} [touchWidth] The client width of the touch event (optional).
      * @param {int} [touchHeight] The client height of the touch event (optional).
-     * @param {Array<int>} [candidateIDs] The Drawable IDs to pick from, otherwise all.
+     * @param {Array<int>} [candidateIDs] The Drawable IDs to pick from, otherwise all visible drawables.
      * @returns {int} The ID of the topmost Drawable under the picking location, or
      * RenderConstants.ID_NONE if there is no Drawable at that location.
      */
@@ -809,11 +810,12 @@ class RenderWebGL extends EventEmitter {
 
         touchWidth = touchWidth || 1;
         touchHeight = touchHeight || 1;
-        candidateIDs = (candidateIDs || this._drawList).filter(id => {
+        const candidateIDsWereProvided = !!candidateIDs;
+        candidateIDs = candidateIDs || (this._drawList.filter(id => {
             const drawable = this._allDrawables[id];
             const uniforms = drawable.getUniforms();
             return drawable.getVisible() && uniforms.u_ghost !== 0;
-        });
+        }));
 
         const clientToGLX = gl.canvas.width / gl.canvas.clientWidth;
         const clientToGLY = gl.canvas.height / gl.canvas.clientHeight;
@@ -851,7 +853,7 @@ class RenderWebGL extends EventEmitter {
                 for (let d = candidateIDs.length - 1; d >= 0; d--) {
                     const id = candidateIDs[d];
                     const drawable = this._allDrawables[id];
-                    if (drawable.isTouching(worldPos)) {
+                    if (drawable.isTouching(worldPos, candidateIDsWereProvided)) {
                         hits[id] = (hits[id] || 0) + 1;
                         break;
                     }
