@@ -1,8 +1,4 @@
-#ifndef DRAW_MODE_line
 precision mediump float;
-#else // DRAW_MODE_line
-precision highp float;
-#endif // DRAW_MODE_line
 
 uniform float u_fudge;
 
