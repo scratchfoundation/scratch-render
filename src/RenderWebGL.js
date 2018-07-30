@@ -1440,20 +1440,13 @@ class RenderWebGL extends EventEmitter {
      * @param {any} regionId - id of the region to enter
      * @param {function} enter - handle to call when first entering a region
      */
-    enterDrawRegion (regionId, enter) {
+    enterDrawRegion (regionId, enter = regionId.enter, exit = regionId.exit) {
         if (this._regionId !== regionId) {
             this._doExitDrawRegion();
             this._regionId = regionId;
             enter();
+            this._exitRegion = exit;
         }
-    }
-
-    /**
-     * Register a exit handle when a new region will be entered.
-     * @param {function} exit - handle to call when about to enter a new region
-     */
-    exitDrawRegion (exit) {
-        this._exitRegion = exit;
     }
 
     /**

@@ -107,16 +107,31 @@ class PenSkin extends Skin {
         this._silhouetteDirty = false;
 
         /** @type {object} */
-        this._lineOnBufferDrawRegionId = {};
+        this._lineOnBufferDrawRegionId = {
+            enter: () => this._enterDrawLineOnBuffer(),
+            exit: () => this._exitDrawLineOnBuffer()
+        };
 
         /** @type {object} */
-        this._toBufferDrawRegionId = {};
+        this._toBufferDrawRegionId = {
+            enter: () => this._enterDrawToBuffer(),
+            exit: () => this._exitDrawToBuffer()
+        };
 
         /** @type {object} */
-        this._silhouetteDrawRegionId = {};
+        this._silhouetteDrawRegionId = {
+            enter: () => this._enterUpdateSilhouette(),
+            exit: () => this._exitUpdateSilhouette()
+        };
 
         /** @type {twgl.BufferInfo} */
         this._lineBufferInfo = null;
+
+        const NO_EFFECTS = 0;
+        /** @type {twgl.ProgramInfo} */
+        this._noEffectShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
+
+        this._lineShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.lineSample, NO_EFFECTS);
 
         this._createLineGeometry();
 
@@ -292,6 +307,48 @@ class PenSkin extends Skin {
     }
 
     /**
+     * Prepare to draw lines in the _lineOnBufferDrawRegionId region.
+     */
+    _enterDrawLineOnBuffer() {
+        const gl = this._renderer.gl;
+
+        const bounds = this._bounds;
+        const currentShader = this._lineShader;
+        const projection = twgl.m4.ortho(0, bounds.width, 0, bounds.height, -1, 1, __projectionMatrix);
+
+        twgl.bindFramebufferInfo(gl, this._framebuffer);
+
+        // Needs a blend function that blends a destination that starts with
+        // no alpha.
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+
+        gl.viewport(0, 0, bounds.width, bounds.height);
+
+        gl.useProgram(currentShader.program);
+
+        twgl.setBuffersAndAttributes(gl, currentShader, this._lineBufferInfo);
+
+        const uniforms = {
+            u_skin: this._texture,
+            u_projectionMatrix: projection,
+            u_fudge: 0
+        };
+
+        twgl.setUniforms(currentShader, uniforms);
+    }
+
+    /**
+     * Return to a base state from _lineOnBufferDrawRegionId.
+     */
+    _exitDrawLineOnBuffer() {
+        const gl = this._renderer.gl;
+
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+
+        twgl.bindFramebufferInfo(gl, null);
+    }
+
+    /**
      * Draw a line on the framebuffer.
      * @param {PenAttributes} penAttributes - how the line should be drawn.
      * @param {number} x0 - the X coordinate of the beginning of the line.
@@ -303,32 +360,9 @@ class PenSkin extends Skin {
         const gl = this._renderer.gl;
 
         const bounds = this._bounds;
-        const projection = twgl.m4.ortho(0, bounds.width, 0, bounds.height, -1, 1, __projectionMatrix);
+        const currentShader = this._lineShader;
 
-        const NO_EFFECTS = 0;
-        const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.lineSample, NO_EFFECTS);
-
-        this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId, () => {
-            twgl.bindFramebufferInfo(gl, this._framebuffer);
-
-            // Needs a blend function that blends a destination that starts with
-            // no alpha.
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
-
-            gl.viewport(0, 0, bounds.width, bounds.height);
-
-            gl.useProgram(currentShader.program);
-
-            twgl.setBuffersAndAttributes(gl, currentShader, this._lineBufferInfo);
-
-            const uniforms = {
-                u_skin: this._texture,
-                u_projectionMatrix: projection,
-                u_fudge: 0
-            };
-
-            twgl.setUniforms(currentShader, uniforms);
-        });
+        this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId);
 
         const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
         const length = Math.hypot(Math.abs(x1 - x0) - 0.001, Math.abs(y1 - y0) - 0.001);
@@ -366,12 +400,6 @@ class PenSkin extends Skin {
 
         twgl.drawBufferInfo(gl, this._lineBufferInfo, gl.TRIANGLES);
 
-        this._renderer.exitDrawRegion(() => {
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
-
-            twgl.bindFramebufferInfo(gl, null);
-        });
-
         this._silhouetteDirty = true;
     }
 
@@ -402,17 +430,13 @@ class PenSkin extends Skin {
      * @param {function} enter - secondary call to make when entering the draw
      *   region
      */
-    _drawRectangleRegionEnter (regionId, currentShader, bounds, enter) {
-        this._renderer.enterDrawRegion(regionId, () => {
-            enter();
+    _drawRectangleRegionEnter (currentShader, bounds) {
+        const gl = this._renderer.gl;
 
-            const gl = this._renderer.gl;
+        gl.viewport(0, 0, bounds.width, bounds.height);
 
-            gl.viewport(0, 0, bounds.width, bounds.height);
-
-            gl.useProgram(currentShader.program);
-            twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
-        });
+        gl.useProgram(currentShader.program);
+        twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
     }
 
     /**
@@ -458,12 +482,27 @@ class PenSkin extends Skin {
     }
 
     /**
-     * Exit a draw region registering an exit handle when a different draw
-     * region is about to be entered.
-     * @param {function} exit - exit region handle
+     * Prepare to draw a rectangle in the _toBufferDrawRegionId region.
      */
-    _drawRectangleRegionExit (exit) {
-        this._renderer.exitDrawRegion(exit);
+    _enterDrawToBuffer() {
+        const gl = this._renderer.gl;
+
+        twgl.bindFramebufferInfo(gl, this._framebuffer);
+
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+
+        this._drawRectangleRegionEnter(this._noEffectShader, this._bounds);
+    }
+
+    /**
+     * Return to a base state from _toBufferDrawRegionId.
+     */
+    _exitDrawToBuffer() {
+        const gl = this._renderer.gl;
+
+        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+
+        twgl.bindFramebufferInfo(gl, null);
     }
 
     /**
@@ -491,24 +530,12 @@ class PenSkin extends Skin {
             this._canvasDirty = false;
         }
 
-        const NO_EFFECTS = 0;
-        const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
-
+        const currentShader = this._noEffectShader;
         const bounds = this._bounds;
 
-        this._drawRectangleRegionEnter(this._toBufferDrawRegionId, currentShader, bounds, () => {
-            twgl.bindFramebufferInfo(gl, this._framebuffer);
-
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
-        });
+        this._renderer.enterDrawRegion(this._toBufferDrawRegionId);
 
         this._drawRectangle(currentShader, texture, bounds, x, y);
-
-        this._drawRectangleRegionExit(() => {
-            gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
-
-            twgl.bindFramebufferInfo(gl, null);
-        });
 
         this._silhouetteDirty = true;
     }
@@ -604,6 +631,30 @@ class PenSkin extends Skin {
     }
 
     /**
+     * Prepare to draw the framebuffer in _silhouetteDrawRegionId region.
+     */
+    _enterUpdateSilhouette() {
+        const gl = this._renderer.gl;
+
+        twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
+
+        gl.disable(gl.BLEND);
+
+        this._drawRectangleRegionEnter(this._noEffectShader, this._bounds);
+    }
+
+    /**
+     * Return to a base state from _silhouetteDrawRegionId.
+     */
+    _exitUpdateSilhouette() {
+        const gl = this._renderer.gl;
+
+        gl.enable(gl.BLEND);
+
+        twgl.bindFramebufferInfo(gl, null);
+    }
+
+    /**
      * If there have been pen operations that have dirtied the canvas, update
      * now before someone wants to use our silhouette.
      */
@@ -618,26 +669,14 @@ class PenSkin extends Skin {
 
             const bounds = this._bounds;
             const texture = this._exportTexture;
+            const currentShader = this._noEffectShader;
 
-            const NO_EFFECTS = 0;
-            const currentShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
-
-            this._drawRectangleRegionEnter(this._silhouetteDrawRegionId, currentShader, bounds, () => {
-                twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
-
-                gl.disable(gl.BLEND);
-            });
+            this._renderer.enterDrawRegion(this._silhouetteDrawRegionId);
 
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             this._drawRectangle(currentShader, texture, bounds);
-
-            this._drawRectangleRegionExit(() => {
-                gl.enable(gl.BLEND);
-
-                twgl.bindFramebufferInfo(gl, null);
-            });
 
             // Sample the framebuffer's pixels into the silhouette instance
             const skinPixels = new Uint8Array(Math.floor(this._canvas.width * this._canvas.height * 4));
