@@ -118,12 +118,6 @@ class PenSkin extends Skin {
             exit: () => this._exitDrawToBuffer()
         };
 
-        /** @type {object} */
-        this._silhouetteDrawRegionId = {
-            enter: () => this._enterUpdateSilhouette(),
-            exit: () => this._exitUpdateSilhouette()
-        };
-
         /** @type {twgl.BufferInfo} */
         this._lineBufferInfo = null;
 
@@ -628,30 +622,6 @@ class PenSkin extends Skin {
     }
 
     /**
-     * Prepare to draw the framebuffer in _silhouetteDrawRegionId region.
-     */
-    _enterUpdateSilhouette () {
-        const gl = this._renderer.gl;
-
-        twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
-
-        gl.disable(gl.BLEND);
-
-        this._drawRectangleRegionEnter(this._noEffectShader, this._bounds);
-    }
-
-    /**
-     * Return to a base state from _silhouetteDrawRegionId.
-     */
-    _exitUpdateSilhouette () {
-        const gl = this._renderer.gl;
-
-        gl.enable(gl.BLEND);
-
-        twgl.bindFramebufferInfo(gl, null);
-    }
-
-    /**
      * If there have been pen operations that have dirtied the canvas, update
      * now before someone wants to use our silhouette.
      */
@@ -668,12 +638,7 @@ class PenSkin extends Skin {
             const texture = this._exportTexture;
             const currentShader = this._noEffectShader;
 
-            this._renderer.enterDrawRegion(this._silhouetteDrawRegionId);
-
-            gl.clearColor(0, 0, 0, 0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-
-            this._drawRectangle(currentShader, texture, bounds);
+            this._renderer.enterDrawRegion(this._toBufferDrawRegionId);
 
             // Sample the framebuffer's pixels into the silhouette instance
             const skinPixels = new Uint8Array(Math.floor(this._canvas.width * this._canvas.height * 4));
