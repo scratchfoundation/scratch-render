@@ -199,7 +199,9 @@ void main()
 	#endif // DRAW_MODE_colorMask
 
 	// WebGL defaults to premultiplied alpha
+	#ifndef DRAW_MODE_stamp
 	gl_FragColor.rgb *= gl_FragColor.a;
+	#endif // DRAW_MODE_stamp
 
 	#endif // DRAW_MODE_silhouette
 

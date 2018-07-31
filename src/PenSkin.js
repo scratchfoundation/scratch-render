@@ -123,8 +123,9 @@ class PenSkin extends Skin {
 
         const NO_EFFECTS = 0;
         /** @type {twgl.ProgramInfo} */
-        this._noEffectShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
+        this._stampShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.stamp, NO_EFFECTS);
 
+        /** @type {twgl.ProgramInfo} */
         this._lineShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.lineSample, NO_EFFECTS);
 
         this._createLineGeometry();
@@ -181,7 +182,7 @@ class PenSkin extends Skin {
         const gl = this._renderer.gl;
         twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-        gl.clearColor(0, 0, 0, 0);
+        gl.clearColor(1, 1, 1, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         const ctx = this._canvas.getContext('2d');
@@ -314,7 +315,7 @@ class PenSkin extends Skin {
 
         // Needs a blend function that blends a destination that starts with
         // no alpha.
-        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
         gl.viewport(0, 0, bounds.width, bounds.height);
 
@@ -480,9 +481,9 @@ class PenSkin extends Skin {
 
         twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.SRC_ALPHA, gl.ONE);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-        this._drawRectangleRegionEnter(this._noEffectShader, this._bounds);
+        this._drawRectangleRegionEnter(this._stampShader, this._bounds);
     }
 
     /**
@@ -521,7 +522,7 @@ class PenSkin extends Skin {
             this._canvasDirty = false;
         }
 
-        const currentShader = this._noEffectShader;
+        const currentShader = this._stampShader;
         const bounds = this._bounds;
 
         this._renderer.enterDrawRegion(this._toBufferDrawRegionId);
@@ -594,7 +595,7 @@ class PenSkin extends Skin {
             this._silhouetteBuffer = twgl.createFramebufferInfo(gl, [{format: gl.RGBA}], width, height);
         }
 
-        gl.clearColor(0, 0, 0, 0);
+        gl.clearColor(1, 1, 1, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         this._silhouetteDirty = true;
