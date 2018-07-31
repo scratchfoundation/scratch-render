@@ -309,7 +309,7 @@ class PenSkin extends Skin {
     /**
      * Prepare to draw lines in the _lineOnBufferDrawRegionId region.
      */
-    _enterDrawLineOnBuffer() {
+    _enterDrawLineOnBuffer () {
         const gl = this._renderer.gl;
 
         const bounds = this._bounds;
@@ -340,7 +340,7 @@ class PenSkin extends Skin {
     /**
      * Return to a base state from _lineOnBufferDrawRegionId.
      */
-    _exitDrawLineOnBuffer() {
+    _exitDrawLineOnBuffer () {
         const gl = this._renderer.gl;
 
         gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
@@ -359,7 +359,6 @@ class PenSkin extends Skin {
     _drawLineOnBuffer (penAttributes, x0, y0, x1, y1) {
         const gl = this._renderer.gl;
 
-        const bounds = this._bounds;
         const currentShader = this._lineShader;
 
         this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId);
@@ -423,11 +422,9 @@ class PenSkin extends Skin {
      *
      * Multiple calls with the same regionId skip the callback reducing the
      * amount of GL state changes.
-     * @param {any} regionId - id of the draw region
      * @param {twgl.ProgramInfo} currentShader - program info to draw rectangle
      *   with
      * @param {Rectangle} bounds - viewport bounds to draw in
-     * @param {function} enter - secondary call to make when entering the draw
      *   region
      */
     _drawRectangleRegionEnter (currentShader, bounds) {
@@ -484,7 +481,7 @@ class PenSkin extends Skin {
     /**
      * Prepare to draw a rectangle in the _toBufferDrawRegionId region.
      */
-    _enterDrawToBuffer() {
+    _enterDrawToBuffer () {
         const gl = this._renderer.gl;
 
         twgl.bindFramebufferInfo(gl, this._framebuffer);
@@ -497,7 +494,7 @@ class PenSkin extends Skin {
     /**
      * Return to a base state from _toBufferDrawRegionId.
      */
-    _exitDrawToBuffer() {
+    _exitDrawToBuffer () {
         const gl = this._renderer.gl;
 
         gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
@@ -633,7 +630,7 @@ class PenSkin extends Skin {
     /**
      * Prepare to draw the framebuffer in _silhouetteDrawRegionId region.
      */
-    _enterUpdateSilhouette() {
+    _enterUpdateSilhouette () {
         const gl = this._renderer.gl;
 
         twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
@@ -646,7 +643,7 @@ class PenSkin extends Skin {
     /**
      * Return to a base state from _silhouetteDrawRegionId.
      */
-    _exitUpdateSilhouette() {
+    _exitUpdateSilhouette () {
         const gl = this._renderer.gl;
 
         gl.enable(gl.BLEND);
