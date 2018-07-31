@@ -636,8 +636,6 @@ class PenSkin extends Skin {
             const gl = this._renderer.gl;
 
             const bounds = this._bounds;
-            const texture = this._exportTexture;
-            const currentShader = this._noEffectShader;
 
             this._renderer.enterDrawRegion(this._toBufferDrawRegionId);
 
