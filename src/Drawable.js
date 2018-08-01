@@ -373,7 +373,6 @@ class Drawable {
     /**
      * Check if the world position touches the skin.
      * @param {twgl.v3} vec World coordinate vector.
-     * this drawable is invisible. Defaults to false.
      * @return {boolean} True if the world position touches the skin.
      */
     isTouching (vec) {
