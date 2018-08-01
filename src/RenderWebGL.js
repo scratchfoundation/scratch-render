@@ -660,7 +660,7 @@ class RenderWebGL extends EventEmitter {
 
     /**
      * Check if a particular Drawable is touching a particular color.
-     * Unlike touching drawable, touching color tests invisible sprites.
+     * Unlike touching drawable, if the "tester" is invisble, we will still test.
      * @param {int} drawableID The ID of the Drawable to check.
      * @param {Array<int>} color3b Test if the Drawable is touching this color.
      * @param {Array<int>} [mask3b] Optionally mask the check to this part of Drawable.
@@ -670,7 +670,7 @@ class RenderWebGL extends EventEmitter {
         const gl = this._gl;
         twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-        const candidates = this._candidatesTouching(drawableID, this._drawList);
+        const candidates = this._candidatesTouching(drawableID, this._visibleDrawList);
         if (candidates.length === 0) {
             return false;
         }
@@ -768,7 +768,8 @@ class RenderWebGL extends EventEmitter {
         const candidates = this._candidatesTouching(drawableID,
             // even if passed an invisible drawable, we will NEVER touch it!
             candidateIDs.filter(id => this._allDrawables[id]._visible));
-        if (candidates.length === 0) {
+        // if we are invisble we don't touch anything.
+        if (candidates.length === 0 || !this._allDrawables[drawableID]._visible) {
             return false;
         }
 
