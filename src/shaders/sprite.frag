@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 uniform float u_fudge;
 
@@ -208,8 +208,5 @@ void main()
 	#else // DRAW_MODE_lineSample
 	gl_FragColor = u_lineColor;
 	gl_FragColor.a *= clamp(u_capScale - u_capScale * 2.0 * distance(v_texCoord, vec2(0.5, 0.5)), 0.0, 1.0);
-
-	// WebGL defaults to premultiplied alpha
-	gl_FragColor.rgb *= gl_FragColor.a;
 	#endif // DRAW_MODE_lineSample
 }
