@@ -670,7 +670,7 @@ class RenderWebGL extends EventEmitter {
         const gl = this._gl;
         twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-        const candidates = this._candidatesTouching(drawableID, this._visibleDrawList);
+        const candidates = this._candidatesTouching(drawableID, this._drawList);
         if (candidates.length === 0) {
             return false;
         }
@@ -761,12 +761,13 @@ class RenderWebGL extends EventEmitter {
     /**
      * Check if a particular Drawable is touching any in a set of Drawables.
      * @param {int} drawableID The ID of the Drawable to check.
-     * @param {?Array<int>} candidateIDs The Drawable IDs to check, otherwise all drawables in the renderer
+     * @param {?Array<int>} candidateIDs The Drawable IDs to check, otherwise all visible drawables in the renderer
      * @returns {boolean} True if the Drawable is touching one of candidateIDs.
      */
-    isTouchingDrawables (drawableID, candidateIDs = this._visibleDrawList) {
-
-        const candidates = this._candidatesTouching(drawableID, candidateIDs);
+    isTouchingDrawables (drawableID, candidateIDs = this._drawList) {
+        const candidates = this._candidatesTouching(drawableID,
+            // even if passed an invisible drawable, we will NEVER touch it!
+            candidateIDs.filter(id => this._allDrawables[id]._visible));
         if (candidates.length === 0) {
             return false;
         }
