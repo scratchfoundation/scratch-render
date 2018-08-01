@@ -431,6 +431,10 @@ class RenderWebGL extends EventEmitter {
         }
     }
 
+    get _visibleDrawList () {
+        return this._drawList.filter(id => this._allDrawables[id]._visible);
+    }
+
     // Given a layer group, return the index where it ends (non-inclusive),
     // e.g. the returned index does not have a drawable from this layer group in it)
     _endIndexForKnownLayerGroup (layerGroup) {
@@ -666,7 +670,7 @@ class RenderWebGL extends EventEmitter {
         const gl = this._gl;
         twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
-        const candidates = this._candidatesTouching(drawableID, this._drawList);
+        const candidates = this._candidatesTouching(drawableID, this._visibleDrawList);
         if (candidates.length === 0) {
             return false;
         }
@@ -760,7 +764,7 @@ class RenderWebGL extends EventEmitter {
      * @param {?Array<int>} candidateIDs The Drawable IDs to check, otherwise all drawables in the renderer
      * @returns {boolean} True if the Drawable is touching one of candidateIDs.
      */
-    isTouchingDrawables (drawableID, candidateIDs = this._drawList) {
+    isTouchingDrawables (drawableID, candidateIDs = this._visibleDrawList) {
 
         const candidates = this._candidatesTouching(drawableID, candidateIDs);
         if (candidates.length === 0) {
@@ -805,17 +809,11 @@ class RenderWebGL extends EventEmitter {
      * @returns {int} The ID of the topmost Drawable under the picking location, or
      * RenderConstants.ID_NONE if there is no Drawable at that location.
      */
-    pick (centerX, centerY, touchWidth, touchHeight, candidateIDs) {
+    pick (centerX, centerY, touchWidth, touchHeight, candidateIDs = this._visibleDrawList) {
         const gl = this._gl;
 
         touchWidth = touchWidth || 1;
         touchHeight = touchHeight || 1;
-        const candidateIDsWereProvided = !!candidateIDs;
-        candidateIDs = candidateIDs || (this._drawList.filter(id => {
-            const drawable = this._allDrawables[id];
-            const uniforms = drawable.getUniforms();
-            return drawable.getVisible() && uniforms.u_ghost !== 0;
-        }));
 
         const clientToGLX = gl.canvas.width / gl.canvas.clientWidth;
         const clientToGLY = gl.canvas.height / gl.canvas.clientHeight;
@@ -853,7 +851,7 @@ class RenderWebGL extends EventEmitter {
                 for (let d = candidateIDs.length - 1; d >= 0; d--) {
                     const id = candidateIDs[d];
                     const drawable = this._allDrawables[id];
-                    if (drawable.isTouching(worldPos, candidateIDsWereProvided)) {
+                    if (drawable.isTouching(worldPos)) {
                         hits[id] = (hits[id] || 0) + 1;
                         break;
                     }
