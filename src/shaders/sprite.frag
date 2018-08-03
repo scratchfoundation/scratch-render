@@ -207,6 +207,17 @@ void main()
 
 	#else // DRAW_MODE_lineSample
 	gl_FragColor = u_lineColor;
-	gl_FragColor.a *= clamp(u_capScale - u_capScale * 2.0 * distance(v_texCoord, vec2(0.5, 0.5)), 0.0, 1.0);
+	gl_FragColor.a *= clamp(
+		// Scale the capScale a little to have an aliased region.
+		u_capScale + 2.0 -
+			u_capScale * 2.0 * distance(
+				// Scale and offset the texture coordinate so it has a little
+				// rim where the line is aliased.
+				v_texCoord * (u_capScale + 2.0) / u_capScale - 1.0 / u_capScale,
+				vec2(0.5, 0.5)
+			),
+		0.0,
+		1.0
+	);
 	#endif // DRAW_MODE_lineSample
 }
