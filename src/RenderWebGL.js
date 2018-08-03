@@ -845,6 +845,7 @@ class RenderWebGL extends EventEmitter {
      * @param {int} centerY The client y coordinate of the picking location.
      * @param {int} [touchWidth] The client width of the touch event (optional).
      * @param {int} [touchHeight] The client height of the touch event (optional).
+     * @returns {boolean} If the drawable has any pixels that would draw in the touch area
      */
     drawableTouching (drawableID, centerX, centerY, touchWidth, touchHeight) {
         const drawable = this._allDrawables[drawableID];
