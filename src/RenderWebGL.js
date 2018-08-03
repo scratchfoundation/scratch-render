@@ -811,7 +811,12 @@ class RenderWebGL extends EventEmitter {
      * @returns {int} The ID of the topmost Drawable under the picking location, or
      * RenderConstants.ID_NONE if there is no Drawable at that location.
      */
-    pick (centerX, centerY, touchWidth, touchHeight, candidateIDs = this._visibleDrawList) {
+    pick (centerX, centerY, touchWidth, touchHeight, candidateIDs) {
+        candidateIDs = candidateIDs || this._drawList.filter(id => {
+            const drawable = this._allDrawables[id];
+            // default pick list ignores visible and ghosted sprites.
+            return drawable.getVisible() && drawable.getUniforms().u_ghost !== 0;
+        });
         const gl = this._gl;
 
         touchWidth = touchWidth || 1;
