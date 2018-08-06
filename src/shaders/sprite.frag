@@ -38,6 +38,7 @@ uniform float u_ghost;
 #ifdef DRAW_MODE_lineSample
 uniform vec4 u_lineColor;
 uniform float u_capScale;
+uniform float u_aliasAmount;
 #endif // DRAW_MODE_lineSample
 
 uniform sampler2D u_skin;
@@ -209,13 +210,9 @@ void main()
 	gl_FragColor = u_lineColor;
 	gl_FragColor.a *= clamp(
 		// Scale the capScale a little to have an aliased region.
-		u_capScale + 2.0 -
-			u_capScale * 2.0 * distance(
-				// Scale and offset the texture coordinate so it has a little
-				// rim where the line is aliased.
-				v_texCoord * (u_capScale + 2.0) / u_capScale - 1.0 / u_capScale,
-				vec2(0.5, 0.5)
-			),
+		(u_capScale + u_aliasAmount -
+			u_capScale * 2.0 * distance(v_texCoord, vec2(0.5, 0.5))
+		) / (u_aliasAmount + 1.0),
 		0.0,
 		1.0
 	);

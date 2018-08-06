@@ -363,16 +363,17 @@ class PenSkin extends Skin {
         const avgX = (x0 + x1) / 2;
         const avgY = (y0 + y1) / 2;
         const theta = Math.atan2(y0 - y1, x0 - x1);
+        const alias = x0 === x1 || y0 === y1 ? 0 : 1;
 
         // The line needs a bit of aliasing to look smooth. Add a small offset
         // and a small size boost to scaling to give a section to alias.
         const translationVector = __modelTranslationVector;
-        translationVector[0] = avgX - 1;
-        translationVector[1] = avgY - 1;
+        translationVector[0] = avgX - alias;
+        translationVector[1] = avgY - alias;
 
         const scalingVector = __modelScalingVector;
-        scalingVector[0] = diameter + 2;
-        scalingVector[1] = length + diameter + 2;
+        scalingVector[0] = diameter + alias;
+        scalingVector[1] = length + diameter + alias;
 
         const radius = diameter / 2;
         const yScalar = (0.50001 - (radius / (length + diameter)));
@@ -380,6 +381,7 @@ class PenSkin extends Skin {
         const uniforms = {
             u_positionScalar: yScalar,
             u_capScale: diameter,
+            u_aliasAmount: alias,
             u_modelMatrix: twgl.m4.multiply(
                 twgl.m4.multiply(
                     twgl.m4.translation(translationVector, __modelTranslationMatrix),
