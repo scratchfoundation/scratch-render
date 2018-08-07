@@ -933,7 +933,12 @@ class RenderWebGL extends EventEmitter {
         candidateIDs = (candidateIDs || this._drawList).filter(id => {
             const drawable = this._allDrawables[id];
             // default pick list ignores visible and ghosted sprites.
-            return drawable.getVisible() && drawable.getUniforms().u_ghost !== 0;
+            if (drawable.getVisible() && drawable.getUniforms().u_ghost !== 0) {
+                drawable.updateMatrix();
+                drawable.skin.updateSilhouette();
+                return true;
+            }
+            return false;
         });
         if (candidateIDs.length === 0) {
             return false;
