@@ -21,8 +21,7 @@ const __blendColor = new Uint8ClampedArray(4);
 
 // More pixels than this and we give up to the GPU and take the cost of readPixels
 // Width * Height * Number of drawables at location
-const __cpuTouchingColorPixelCount = location.href.includes('count=') ?
-    Number(location.href.match(/count=([^&#]+)/)[1]) : 5e4;
+const __cpuTouchingColorPixelCount = 4e4;
 
 /**
  * @callback RenderWebGL#idFilterFunc
