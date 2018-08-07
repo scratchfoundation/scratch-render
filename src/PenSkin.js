@@ -315,7 +315,10 @@ class PenSkin extends Skin {
 
         // Needs a blend function that blends a destination that starts with
         // no alpha.
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.blendFuncSeparate(
+            gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
+            gl.ONE, gl.ONE_MINUS_SRC_ALPHA
+        );
 
         gl.viewport(0, 0, bounds.width, bounds.height);
 
@@ -368,12 +371,12 @@ class PenSkin extends Skin {
         // The line needs a bit of aliasing to look smooth. Add a small offset
         // and a small size boost to scaling to give a section to alias.
         const translationVector = __modelTranslationVector;
-        translationVector[0] = avgX - alias;
-        translationVector[1] = avgY - alias;
+        translationVector[0] = avgX - alias / 2;
+        translationVector[1] = avgY + alias / 4;
 
         const scalingVector = __modelScalingVector;
         scalingVector[0] = diameter + alias;
-        scalingVector[1] = length + diameter + alias;
+        scalingVector[1] = length + diameter - alias / 2;
 
         const radius = diameter / 2;
         const yScalar = (0.50001 - (radius / (length + diameter)));
