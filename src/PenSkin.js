@@ -371,12 +371,12 @@ class PenSkin extends Skin {
         // The line needs a bit of aliasing to look smooth. Add a small offset
         // and a small size boost to scaling to give a section to alias.
         const translationVector = __modelTranslationVector;
-        translationVector[0] = avgX - alias / 2;
-        translationVector[1] = avgY + alias / 4;
+        translationVector[0] = avgX - (alias / 2);
+        translationVector[1] = avgY + (alias / 4);
 
         const scalingVector = __modelScalingVector;
         scalingVector[0] = diameter + alias;
-        scalingVector[1] = length + diameter - alias / 2;
+        scalingVector[1] = length + diameter - (alias / 2);
 
         const radius = diameter / 2;
         const yScalar = (0.50001 - (radius / (length + diameter)));
