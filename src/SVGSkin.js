@@ -71,7 +71,7 @@ class SVGSkin extends Skin {
         const requestedScale = Math.min(scaleMax / 100, this._maxTextureScale);
         let newScale = this._textureScale;
         while ((newScale < this._maxTextureScale) && (requestedScale >= 1.5 * newScale)) {
-            newScale = Math.max(this._maxTextureScale, newScale * 2);
+            newScale = Math.min(this._maxTextureScale, newScale * 2);
         }
         if (this._textureScale !== newScale) {
             this._textureScale = newScale;
