@@ -68,7 +68,7 @@ class SVGSkin extends Skin {
     getTexture (scale) {
         // The texture only ever gets uniform scale. Take the larger of the two axes.
         const scaleMax = scale ? Math.max(Math.abs(scale[0]), Math.abs(scale[1])) : 100;
-        const requestedScale = Math.min(scaleMax / 100, this._maxTextureScale);
+        const requestedScale = scaleMax / 100;
         let newScale = this._textureScale;
         while ((newScale < this._maxTextureScale) && (requestedScale >= 1.5 * newScale)) {
             newScale = Math.min(this._maxTextureScale, newScale * 2);
