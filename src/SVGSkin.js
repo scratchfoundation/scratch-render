@@ -115,10 +115,7 @@ class SVGSkin extends Skin {
             }
 
             const maxDimension = Math.max(this._svgRenderer.canvas.width, this._svgRenderer.canvas.height);
-            let testScale = 2;
-            for (testScale; maxDimension * testScale <= MAX_TEXTURE_DIMENSION; testScale *= 2) {
-                this._maxTextureScale = testScale;
-            }
+            this._maxTextureScale = MAX_TEXTURE_DIMENSION / maxDimension;
 
             if (typeof rotationCenter === 'undefined') rotationCenter = this.calculateRotationCenter();
             this.setRotationCenter.apply(this, rotationCenter);
