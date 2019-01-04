@@ -55,8 +55,7 @@ class SVGSkin extends Skin {
      */
     get resolution () {
         const renderer = this._svgRenderer;
-        const ratio = renderer.getDrawRatio() * this._textureScale;
-        return [Math.round(renderer._measurements.width * ratio), Math.round(renderer._measurements.height * ratio)];
+        return [renderer.renderBounds.width, renderer.renderBounds.height];
     }
 
     /**
@@ -82,6 +81,7 @@ class SVGSkin extends Skin {
         while ((newScale < this._maxTextureScale) && (requestedScale >= 1.5 * newScale)) {
             newScale *= 2;
         }
+        
         if (this._textureScale !== newScale) {
             this._textureScale = newScale;
             this._svgRenderer._draw(this._textureScale, () => {
