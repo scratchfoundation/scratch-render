@@ -51,6 +51,15 @@ class SVGSkin extends Skin {
     }
 
     /**
+     * @return {Array<number>} the size, in pixels, of this skin, as rendered by the SVG renderer.
+     */
+    get resolution () {
+        const renderer = this._svgRenderer;
+        const ratio = renderer.getDrawRatio() * this._textureScale;
+        return [Math.round(renderer._measurements.width * ratio), Math.round(renderer._measurements.height * ratio)];
+    }
+
+    /**
      * Set the origin, in object space, about which this Skin should rotate.
      * @param {number} x - The x coordinate of the new rotation center.
      * @param {number} y - The y coordinate of the new rotation center.

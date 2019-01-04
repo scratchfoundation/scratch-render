@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Scratch WebGL rendering demo</title>
-    <style>
-        #scratch-stage { width: 480px; }
-    </style>
 </head>
 <body style="background: lightsteelblue">
 <canvas id="scratch-stage" width="10" height="10" style="border:3px dashed black"></canvas>
@@ -18,6 +15,7 @@
         <option value="direction">Direction</option>
         <option value="scalex">Scale X</option>
         <option value="scaley">Scale Y</option>
+        <option value="scaleuniform">Scale (uniform)</option>
         <option value="color">Color</option>
         <option value="fisheye">Fisheye</option>
         <option value="whirl">Whirl</option>
@@ -28,6 +26,10 @@
     </select>
     <label for="fudge">Property Value:</label>
     <input type="range" id="fudge" style="width:50%" value="90" min="-90" max="270" step="any" oninput="onFudgeChanged(this.value)" onchange="onFudgeChanged(this.value)">
+</p>
+<p>
+    <label for="stagescale">Stage scale:</label>
+    <input type="range" id="stagescale" value="1" min="1" max="2.5" step="any" oninput="onStageScaleChanged(this.value)" onchange="onStageScaleChanged(this.value)">
 </p>
 <p>
     <label for="fudgeMin">Min:</label><input id="fudgeMin" type="number" onchange="onFudgeMinChanged(this.value)">
@@ -80,7 +82,7 @@
     var posY = 0;
     var scaleX = 100;
     var scaleY = 100;
-    var fudgeProperty = 'posx';
+    var fudgeProperty = document.getElementById("fudgeproperty").value;
     function onFudgePropertyChanged(newValue) {
         fudgeProperty = newValue;
     }
@@ -100,6 +102,7 @@
             case 'direction': props.direction = fudge; break;
             case 'scalex': props.scale = [fudge, scaleY]; scaleX = fudge; break;
             case 'scaley': props.scale = [scaleX, fudge]; scaleY = fudge; break;
+            case 'scaleuniform': props.scale = [fudge, fudge]; scaleX = fudge; scaleY = fudge; break;
             case 'color': props.color = fudge; break;
             case 'whirl': props.whirl = fudge; break;
             case 'fisheye': props.fisheye = fudge; break;
@@ -109,6 +112,10 @@
             case 'ghost': props.ghost = fudge; break;
         }
         renderer.updateDrawableProperties(drawableID2, props);
+    }
+
+    function onStageScaleChanged(newValue) {
+        renderer.resize(480 * newValue, 360 * newValue)
     }
 
     // Adapted from code by Simon Sarris: http://stackoverflow.com/a/10450761

@@ -99,6 +99,14 @@ class Skin extends EventEmitter {
     }
 
     /**
+     * @abstract
+     * @return {Array<number>} the resolution of this skin's texture.
+     */
+    get resolution () {
+        return [0, 0];
+    }
+
+    /**
      * Set the origin, in object space, about which this Skin should rotate.
      * @param {number} x - The x coordinate of the new rotation center.
      * @param {number} y - The y coordinate of the new rotation center.

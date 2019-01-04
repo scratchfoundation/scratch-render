@@ -51,6 +51,13 @@ class BitmapSkin extends Skin {
     }
 
     /**
+     * @return {Array<number>} the size, in pixels, of the bitmap source of this skin.
+     */
+    get resolution () {
+        return this._textureSize;
+    }
+
+    /**
      * @param {Array<number>} scale - The scaling factors to be used.
      * @return {WebGLTexture} The GL texture representation of this skin when drawing at the given scale.
      */

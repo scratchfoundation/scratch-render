@@ -416,16 +416,20 @@ class Drawable {
 
         const localPosition = getLocalPosition(this, vec);
 
-        if (this.useNearest) {
+
+        // TODO: Fix this so that this uses the fully-calculated scale
+        // (which would need to be passed in from the renderer).
+        // Until then, just use isTouchingLinear() to prevent any weirder behavior
+        /* if (this.useNearestAtScale([1, 1])) {
             return this.skin.isTouchingNearest(localPosition);
-        }
+        } */
         return this.skin.isTouchingLinear(localPosition);
     }
 
     /**
-     * Should the drawable use NEAREST NEIGHBOR or LINEAR INTERPOLATION mode
+     * Should the drawable use NEAREST NEIGHBOR or LINEAR INTERPOLATION mode for a given scale?
      */
-    get useNearest () {
+    useNearestAtScale (drawScale) {
         // Raster skins (bitmaps) should always prefer nearest neighbor
         if (this.skin.isRaster) {
             return true;
@@ -436,11 +440,17 @@ class Drawable {
             return false;
         }
 
-        // If the scale of the skin is very close to 100 (0.99999 variance is okay I guess)
-        if (Math.abs(this.scale[0]) > 99 && Math.abs(this.scale[0]) < 101 &&
-            Math.abs(this.scale[1]) > 99 && Math.abs(this.scale[1]) < 101) {
+        const skinResolution = this.skin.resolution;
+        const skinSize = this.skin.size;
+
+        // If the (rounded) scaled size of the skin is equivalent to the internal texture resolution
+        // This prevents any jaggies while minimizing blurriness
+
+        if (Math.abs(Math.round(skinResolution[0] * drawScale[0] * 0.01) - skinSize[0]) < 0.5 &&
+            Math.abs(Math.round(skinResolution[1] * drawScale[1] * 0.01) - skinSize[1]) < 0.5) {
             return true;
         }
+
         return false;
     }
 
