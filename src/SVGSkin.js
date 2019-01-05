@@ -47,7 +47,7 @@ class SVGSkin extends Skin {
      * @return {Array<number>} the natural size, in Scratch units, of this skin.
      */
     get size () {
-        return this._svgRenderer.size;
+        return [this._svgRenderer.renderBounds[0] / this._textureScale, this._svgRenderer.renderBounds[1] / this._textureScale];
     }
 
     /**
