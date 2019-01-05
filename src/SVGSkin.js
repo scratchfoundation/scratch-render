@@ -47,7 +47,10 @@ class SVGSkin extends Skin {
      * @return {Array<number>} the natural size, in Scratch units, of this skin.
      */
     get size () {
-        return [this._svgRenderer.renderBounds[0] / this._textureScale, this._svgRenderer.renderBounds[1] / this._textureScale];
+        return [
+            this._svgRenderer.renderBounds[0] / this._textureScale,
+            this._svgRenderer.renderBounds[1] / this._textureScale
+        ];
     }
 
     /**
@@ -55,7 +58,7 @@ class SVGSkin extends Skin {
      */
     get resolution () {
         const renderer = this._svgRenderer;
-        return [renderer.renderBounds.width, renderer.renderBounds.height];
+        return [renderer.renderBounds[0], renderer.renderBounds[1]];
     }
 
     /**
@@ -81,7 +84,7 @@ class SVGSkin extends Skin {
         while ((newScale < this._maxTextureScale) && (requestedScale >= 1.5 * newScale)) {
             newScale *= 2;
         }
-        
+
         if (this._textureScale !== newScale) {
             this._textureScale = newScale;
             this._svgRenderer._draw(this._textureScale, () => {
