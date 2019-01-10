@@ -54,39 +54,24 @@ varying vec2 v_texCoord;
 // Smaller values can cause problems with "color" and "brightness" effects on some mobile devices
 const float epsilon = 1e-3;
 
-// Convert an RGB color to Hue, Saturation, and Value.
+// Convert an RGB color to Hue, Chroma, and Value.
 // All components of input and output are expected to be in the [0,1] range.
-vec3 convertRGB2HSV(vec3 rgb)
+vec3 convertRGB2HCV(vec3 rgb)
 {
-	// Hue calculation has 3 cases, depending on which RGB component is largest, and one of those cases involves a "mod"
-	// operation. In order to avoid that "mod" we split the M==R case in two: one for G<B and one for B>G. The B>G case
-	// will be calculated in the negative and fed through abs() in the hue calculation at the end.
-	// See also: https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma
-	const vec4 hueOffsets = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+	// Based on work by Sam Hocevar and Emil Persson
+	vec4 P = (rgb.g < rgb.b) ? vec4(rgb.bg, -1.0, 2.0/3.0) : vec4(rgb.gb, 0.0, -1.0/3.0);
+	vec4 Q = (rgb.r < P.x) ? vec4(P.xyw, rgb.r) : vec4(rgb.r, P.yzx);
+	float C = Q.x - min(Q.w, Q.y);
+	float H = abs((Q.w - Q.y) / (6.0 * C + epsilon) + Q.z);
+	return vec3(H, C, Q.x);
+}
 
-	// temp1.xy = sort B & G (largest first)
-	// temp1.z = the hue offset we'll use if it turns out that R is the largest component (M==R)
-	// temp1.w = the hue offset we'll use if it turns out that R is not the largest component (M==G or M==B)
-	vec4 temp1 = rgb.b > rgb.g ? vec4(rgb.bg, hueOffsets.wz) : vec4(rgb.gb, hueOffsets.xy);
-
-	// temp2.x = the largest component of RGB ("M" / "Max")
-	// temp2.yw = the smaller components of RGB, ordered for the hue calculation (not necessarily sorted by magnitude!)
-	// temp2.z = the hue offset we'll use in the hue calculation
-	vec4 temp2 = rgb.r > temp1.x ? vec4(rgb.r, temp1.yzx) : vec4(temp1.xyw, rgb.r);
-
-	// m = the smallest component of RGB ("min")
-	float m = min(temp2.y, temp2.w);
-
-	// Chroma = M - m
-	float C = temp2.x - m;
-
-	// Value = M
-	float V = temp2.x;
-
-	return vec3(
-		abs(temp2.z + (temp2.w - temp2.y) / (6.0 * C + epsilon)), // Hue
-		C / (temp2.x + epsilon), // Saturation
-		V); // Value
+vec3 convertRGB2HSL(vec3 rgb)
+{
+	vec3 hcv = convertRGB2HCV(rgb);
+	float L = hcv.z - hcv.y * 0.5;
+	float S = hcv.y / (1.0 - abs(L * 2.0 - 1.0) + epsilon);
+	return vec3(hcv.x, S, L);
 }
 
 vec3 convertHue2RGB(float hue)
@@ -97,11 +82,11 @@ vec3 convertHue2RGB(float hue)
 	return clamp(vec3(r, g, b), 0.0, 1.0);
 }
 
-vec3 convertHSV2RGB(vec3 hsv)
+vec3 convertHSL2RGB(vec3 hsl)
 {
-	vec3 rgb = convertHue2RGB(hsv.x);
-	float c = hsv.z * hsv.y;
-	return rgb * c + hsv.z - c;
+	vec3 rgb = convertHue2RGB(hsl.x);
+	float C = (1.0 - abs(2.0 * hsl.z - 1.0)) * hsl.y;
+	return (rgb - 0.5) * C + hsl.z;
 }
 #endif // !defined(DRAW_MODE_silhouette) && (defined(ENABLE_color) || defined(ENABLE_brightness))
 
@@ -166,7 +151,7 @@ void main()
 
 	#if defined(ENABLE_color) || defined(ENABLE_brightness)
 	{
-		vec3 hsv = convertRGB2HSV(gl_FragColor.xyz);
+		vec3 hsl = convertRGB2HSL(gl_FragColor.xyz);
 
 		#ifdef ENABLE_color
 		{
@@ -174,19 +159,19 @@ void main()
 			// so that some slight change of hue will be visible
 			const float minLightness = 0.11 / 2.0;
 			const float minSaturation = 0.09;
-			if (hsv.z < minLightness) hsv = vec3(0.0, 1.0, minLightness);
-			else if (hsv.y < minSaturation) hsv = vec3(0.0, minSaturation, hsv.z);
+			if (hsl.z < minLightness) hsl = vec3(0.0, 1.0, minLightness);
+			else if (hsl.y < minSaturation) hsl = vec3(0.0, minSaturation, hsl.z);
 
-			hsv.x = mod(hsv.x + u_color, 1.0);
-			if (hsv.x < 0.0) hsv.x += 1.0;
+			hsl.x = mod(hsl.x + u_color, 1.0);
+			if (hsl.x < 0.0) hsl.x += 1.0;
 		}
 		#endif // ENABLE_color
 
 		#ifdef ENABLE_brightness
-		hsv.z = clamp(hsv.z + u_brightness, 0.0, 1.0);
+		hsl.z = clamp(hsl.z + u_brightness, 0.0, 1.0);
 		#endif // ENABLE_brightness
 
-		gl_FragColor.rgb = convertHSV2RGB(hsv);
+		gl_FragColor.rgb = convertHSL2RGB(hsl);
 	}
 	#endif // defined(ENABLE_color) || defined(ENABLE_brightness)
 
