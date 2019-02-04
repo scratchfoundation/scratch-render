@@ -16,12 +16,12 @@ const intMin = (i, j) => j ^ ((i ^ j) & ((i - j) >> 31));
 const intMax = (i, j) => i ^ ((i ^ j) & ((i - j) >> 31));
 
 /**
- * Internal helper function (in hopes that compiler can inline).  Get a pixel
- * from silhouette data, or 0 if outside it's bounds.
+ * Internal helper function (in hopes that compiler can inline). Get the alpha value for a texel in the silhouette
+ * data, or 0 if outside it's bounds.
  * @private
- * @param {Silhouette} silhouette - has data width and height
- * @param {number} x - x
- * @param {number} y - y
+ * @param {Silhouette} $0 - has data, width, and height
+ * @param {number} x - X position in texels (0..width).
+ * @param {number} y - Y position in texels (0..height).
  * @return {number} Alpha value for x/y position
  */
 const getPoint = ({_width: width, _height: height, _colorData: data}, x, y) => {
@@ -157,7 +157,7 @@ class Silhouette {
         }
 
         this._colorData = imageData.data;
-        // delete our custom overriden "uninitalized" color functions
+        // delete our custom overridden "uninitialized" color functions
         // let the prototype work for itself
         delete this.colorAtNearest;
         delete this.colorAtLinear;
