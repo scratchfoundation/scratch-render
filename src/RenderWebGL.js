@@ -831,7 +831,7 @@ class RenderWebGL extends EventEmitter {
                         debugCanvasContext.fillRect(x - bounds.left, bounds.bottom - y, 1, 1);
                     }
                     // ...and the target color is drawn at this pixel
-                    if (colorMatches(color, color3b, 0)) {
+                    if (colorMatches(color3b, color, 0)) {
                         return true;
                     }
                 }
