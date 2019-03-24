@@ -47,12 +47,7 @@ class SVGSkin extends Skin {
      * @return {Array<number>} the natural size, in Scratch units, of this skin.
      */
     get size () {
-        // Do this instead of this._svgRenderer.size so that it actually matches the size of the texture.
-        // this._svgRenderer.size would return the viewBox-given size of the SVG, which isn't precisely correct.
-        return [
-            this._svgRenderer.renderedSize[0] / this._textureScale,
-            this._svgRenderer.renderedSize[1] / this._textureScale
-        ];
+        return this._svgRenderer.size;
     }
 
     /**
