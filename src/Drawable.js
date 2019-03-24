@@ -407,22 +407,22 @@ class Drawable {
     /**
      * Check if the world position touches the skin.
      * @param {twgl.v3} vec World coordinate vector.
+     * @param {Array<number>} [drawScale] The final, all-transforms-applied,
+     *                                    screen-pixel-space scale to draw at (optional).
      * @return {boolean} True if the world position touches the skin.
      */
-    isTouching (vec) {
+    isTouching (vec, drawScale) {
         if (!this.skin) {
             return false;
         }
 
         const localPosition = getLocalPosition(this, vec);
 
-
-        // TODO: Fix this so that this uses the fully-calculated scale
-        // (which would need to be passed in from the renderer).
-        // Until then, just use isTouchingLinear() to prevent any weirder behavior
-        /* if (this.useNearestAtScale([1, 1])) {
+        // If drawScale is provided, check if we should useNearest.
+        // Otherwise, just use linear.
+        if (drawScale && this.useNearestAtScale(drawScale)) {
             return this.skin.isTouchingNearest(localPosition);
-        } */
+        }
         return this.skin.isTouchingLinear(localPosition);
     }
 
@@ -442,12 +442,11 @@ class Drawable {
             return false;
         }
 
-        const skinResolution = this.skin.resolution;
+        const skinResolution = this.skin.rasterSize;
         const skinSize = this.skin.size;
 
         // If the (rounded) scaled size of the skin is equivalent to the internal texture resolution
         // This prevents any jaggies while minimizing blurriness
-
         if (Math.abs(Math.round(skinResolution[0] * drawScale[0] * 0.01) - skinSize[0]) < 0.5 &&
             Math.abs(Math.round(skinResolution[1] * drawScale[1] * 0.01) - skinSize[1]) < 0.5) {
             return true;

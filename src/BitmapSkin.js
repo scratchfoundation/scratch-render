@@ -53,7 +53,7 @@ class BitmapSkin extends Skin {
     /**
      * @return {Array<number>} the size, in pixels, of the bitmap source of this skin.
      */
-    get resolution () {
+    get rasterSize () {
         return this._textureSize;
     }
 

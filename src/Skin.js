@@ -100,9 +100,9 @@ class Skin extends EventEmitter {
 
     /**
      * @abstract
-     * @return {Array<number>} the resolution of this skin's texture.
+     * @return {Array<number>} the size, in pixels, of this skin's texture.
      */
-    get resolution () {
+    get rasterSize () {
         return [0, 0];
     }
 
