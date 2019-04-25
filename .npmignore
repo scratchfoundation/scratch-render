@@ -4,7 +4,6 @@
 /.eslintignore
 /.gitattributes
 /.github
-/.jsdoc.json
 /.travis.yml
 /test
 /webpack.config.js
