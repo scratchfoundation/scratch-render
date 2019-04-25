@@ -21,7 +21,6 @@ jobs:
     - stage: test
       script:
       - npm run lint
-      - npm run docs
       - npm run tap
     - stage: deploy
       node_js: 8
