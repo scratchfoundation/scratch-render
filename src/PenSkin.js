@@ -85,9 +85,6 @@ class PenSkin extends Skin {
          */
         this._renderer = renderer;
 
-        /** @type {HTMLCanvasElement} */
-        this._canvas = document.createElement('canvas');
-
         /** @type {WebGLTexture} */
         this._texture = null;
 
@@ -99,9 +96,6 @@ class PenSkin extends Skin {
 
         /** @type {WebGLFramebuffer} */
         this._silhouetteBuffer = null;
-
-        /** @type {boolean} */
-        this._canvasDirty = false;
 
         /** @type {boolean} */
         this._silhouetteDirty = false;
@@ -158,7 +152,7 @@ class PenSkin extends Skin {
      * @return {Array<number>} the "native" size, in texels, of this skin. [width, height]
      */
     get size () {
-        return [this._canvas.width, this._canvas.height];
+        return [this._bounds.width, this._bounds.height];
     }
 
     /**
@@ -168,10 +162,6 @@ class PenSkin extends Skin {
      */
     // eslint-disable-next-line no-unused-vars
     getTexture (pixelsWide, pixelsTall) {
-        if (this._canvasDirty) {
-            this._drawToBuffer();
-        }
-
         return this._exportTexture;
     }
 
@@ -184,9 +174,6 @@ class PenSkin extends Skin {
 
         gl.clearColor(1, 1, 1, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
-
-        const ctx = this._canvas.getContext('2d');
-        ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
 
         this._silhouetteDirty = true;
     }
@@ -309,12 +296,8 @@ class PenSkin extends Skin {
 
         twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-        // Needs a blend function that blends a destination that starts with
-        // no alpha.
-        gl.blendFuncSeparate(
-            gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
-            gl.ONE, gl.ONE_MINUS_SRC_ALPHA
-        );
+        // Alpha is premultiplied.
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
         gl.viewport(0, 0, bounds.width, bounds.height);
 
@@ -401,21 +384,6 @@ class PenSkin extends Skin {
     }
 
     /**
-     * Stamp an image onto the pen layer.
-     * @param {HTMLCanvasElement|HTMLImageElement|HTMLVideoElement} stampElement - the element to use as the stamp.
-     * @param {number} x - the X coordinate of the stamp to draw.
-     * @param {number} y - the Y coordinate of the stamp to draw.
-     */
-    drawStamp (stampElement, x, y) {
-        const ctx = this._canvas.getContext('2d');
-
-        ctx.drawImage(stampElement, this._rotationCenter[0] + x, this._rotationCenter[1] - y);
-
-        this._canvasDirty = true;
-        this._silhouetteDirty = true;
-    }
-
-    /**
      * Enter a draw region to draw a rectangle.
      *
      * Multiple calls with the same regionId skip the callback reducing the
@@ -443,7 +411,7 @@ class PenSkin extends Skin {
      * @param {number} x - centered at x
      * @param {number} y - centered at y
      */
-    _drawRectangle (currentShader, texture, bounds, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
+    _drawRectangle (currentShader, texture, bounds, x, y) {
         const gl = this._renderer.gl;
 
         const projection = twgl.m4.ortho(
@@ -484,7 +452,8 @@ class PenSkin extends Skin {
 
         twgl.bindFramebufferInfo(gl, this._framebuffer);
 
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        // Alpha is premultiplied.
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
         this._drawRectangleRegionEnter(this._stampShader, this._bounds);
     }
@@ -506,25 +475,7 @@ class PenSkin extends Skin {
      * @param {number} x - texture centered at x
      * @param {number} y - texture centered at y
      */
-    _drawToBuffer (texture = this._texture, x = -this._canvas.width / 2, y = this._canvas.height / 2) {
-        if (texture !== this._texture && this._canvasDirty) {
-            this._drawToBuffer();
-        }
-
-        const gl = this._renderer.gl;
-
-        // If the input texture is the one that represents the pen's canvas
-        // layer, update the texture with the canvas data.
-        if (texture === this._texture) {
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this._canvas);
-
-            const ctx = this._canvas.getContext('2d');
-            ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
-
-            this._canvasDirty = false;
-        }
-
+    _drawToBuffer (texture = this._texture, x = -this._bounds.width / 2, y = this._bounds.height / 2) {
         const currentShader = this._stampShader;
         const bounds = this._bounds;
 
@@ -556,8 +507,6 @@ class PenSkin extends Skin {
         this._bounds = new Rectangle();
         this._bounds.initFromBounds(width / 2, width / -2, height / 2, height / -2);
 
-        this._canvas.width = width;
-        this._canvas.height = height;
         this._rotationCenter[0] = width / 2;
         this._rotationCenter[1] = height / 2;
 
@@ -567,8 +516,7 @@ class PenSkin extends Skin {
                 auto: true,
                 mag: gl.NEAREST,
                 min: gl.NEAREST,
-                wrap: gl.CLAMP_TO_EDGE,
-                src: this._canvas
+                wrap: gl.CLAMP_TO_EDGE
             }
         );
 
@@ -598,31 +546,7 @@ class PenSkin extends Skin {
             this._silhouetteBuffer = twgl.createFramebufferInfo(gl, [{format: gl.RGBA}], width, height);
         }
 
-        gl.clearColor(1, 1, 1, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        this._silhouetteDirty = true;
-    }
-
-    /**
-     * Set context state to match provided pen attributes.
-     * @param {CanvasRenderingContext2D} context - the canvas rendering context to be modified.
-     * @param {PenAttributes} penAttributes - the pen attributes to be used.
-     * @private
-     */
-    _setAttributes (context, penAttributes) {
-        penAttributes = penAttributes || DefaultPenAttributes;
-        const color4f = penAttributes.color4f || DefaultPenAttributes.color4f;
-        const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
-
-        const r = Math.round(color4f[0] * 255);
-        const g = Math.round(color4f[1] * 255);
-        const b = Math.round(color4f[2] * 255);
-        const a = color4f[3]; // Alpha is 0 to 1 (not 0 to 255 like r,g,b)
-
-        context.strokeStyle = `rgba(${r},${g},${b},${a})`;
-        context.lineCap = 'round';
-        context.lineWidth = diameter;
+        this.clear();
     }
 
     /**
@@ -631,10 +555,6 @@ class PenSkin extends Skin {
      */
     updateSilhouette () {
         if (this._silhouetteDirty) {
-            if (this._canvasDirty) {
-                this._drawToBuffer();
-            }
-
             // Render export texture to another framebuffer
             const gl = this._renderer.gl;
 
@@ -643,19 +563,11 @@ class PenSkin extends Skin {
             this._renderer.enterDrawRegion(this._toBufferDrawRegionId);
 
             // Sample the framebuffer's pixels into the silhouette instance
-            const skinPixels = new Uint8Array(Math.floor(this._canvas.width * this._canvas.height * 4));
-            gl.readPixels(0, 0, this._canvas.width, this._canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, skinPixels);
+            const skinPixels = new Uint8Array(Math.floor(bounds.width * bounds.height * 4));
+            gl.readPixels(0, 0, bounds.width, bounds.height, gl.RGBA, gl.UNSIGNED_BYTE, skinPixels);
 
-            const skinCanvas = this._canvas;
-            skinCanvas.width = bounds.width;
-            skinCanvas.height = bounds.height;
-
-            const skinContext = skinCanvas.getContext('2d');
-            const skinImageData = skinContext.createImageData(bounds.width, bounds.height);
-            skinImageData.data.set(skinPixels);
-            skinContext.putImageData(skinImageData, 0, 0);
-
-            this._silhouette.update(this._canvas);
+            const skinImageData = new ImageData(Uint8ClampedArray.from(skinPixels), bounds.width, bounds.height);
+            this._silhouette.update(skinImageData);
 
             this._silhouetteDirty = false;
         }
