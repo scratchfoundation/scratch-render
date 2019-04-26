@@ -606,8 +606,7 @@ class RenderWebGL extends EventEmitter {
 
         twgl.bindFramebufferInfo(gl, null);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        //gl.clearColor.apply(gl, this._backgroundColor);
-        gl.clearColor(1, 1, 1, 1);
+        gl.clearColor.apply(gl, this._backgroundColor);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection);
