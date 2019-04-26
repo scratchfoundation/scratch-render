@@ -97,6 +97,12 @@ class PenSkin extends Skin {
         /** @type {WebGLFramebuffer} */
         this._silhouetteBuffer = null;
 
+        /** @type {Uint8Array} */
+        this._readPixelsDestinationPixels = null;
+
+        /** @type {Uint8ClampedArray} */
+        this._silhouetteSourcePixels = null;
+
         /** @type {boolean} */
         this._silhouetteDirty = false;
 
@@ -549,6 +555,12 @@ class PenSkin extends Skin {
             this._silhouetteBuffer = twgl.createFramebufferInfo(gl, [{format: gl.RGBA}], width, height);
         }
 
+        // Reinitialize, at the new proper size, the pixel buffers for copying silhouette data to our Silhouette
+        // We need two because gl.readPixels reads to a Uint8Array and ImageData takes a Uint8ClampedArray
+        const numPixels = Math.floor(width * height * 4);
+        this._readPixelsDestinationPixels = new Uint8Array(numPixels);
+        this._silhouetteSourcePixels = new Uint8ClampedArray(numPixels);
+
         this.clear();
     }
 
@@ -566,10 +578,12 @@ class PenSkin extends Skin {
             this._renderer.enterDrawRegion(this._toBufferDrawRegionId);
 
             // Sample the framebuffer's pixels into the silhouette instance
-            const skinPixels = new Uint8Array(Math.floor(bounds.width * bounds.height * 4));
+            const skinPixels = this._readPixelsDestinationPixels;
             gl.readPixels(0, 0, bounds.width, bounds.height, gl.RGBA, gl.UNSIGNED_BYTE, skinPixels);
 
-            const skinImageData = new ImageData(Uint8ClampedArray.from(skinPixels), bounds.width, bounds.height);
+            const silhouettePixels = this._silhouetteSourcePixels;
+            silhouettePixels.set(skinPixels);
+            const skinImageData = new ImageData(silhouettePixels, bounds.width, bounds.height);
             this._silhouette.update(skinImageData);
 
             this._silhouetteDirty = false;
