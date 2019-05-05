@@ -35,7 +35,7 @@
     "eslint": "^4.6.1",
     "eslint-config-scratch": "^5.0.0",
     "gh-pages": "^1.0.0",
-    "jsdoc": "^3.5.5",
+    "jsdoc": "3.5.5",
     "json": "^9.0.4",
     "scratch-vm": "0.2.0-prerelease.20190207224121",
     "tap": "^11.0.0",
