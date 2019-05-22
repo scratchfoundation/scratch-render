@@ -828,7 +828,8 @@ class RenderWebGL extends EventEmitter {
                 projection,
                 {
                     extraUniforms,
-                    ignoreVisibility: true // Touching color ignores sprite visibility
+                    ignoreVisibility: true, // Touching color ignores sprite visibility
+                    effectMask: ~ShaderManager.EFFECT_INFO.ghost.mask // Also ignores sprite ghost effect
                 });
 
             gl.stencilFunc(gl.EQUAL, 1, 1);

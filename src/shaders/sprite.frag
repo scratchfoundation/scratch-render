@@ -156,12 +156,7 @@ void main()
 	gl_FragColor = texture2D(u_skin, texcoord0);
 
 	#ifdef ENABLE_ghost
-	gl_FragColor.a *= u_ghost;
-
-	#ifndef DRAW_MODE_colorMask
-	gl_FragColor.rgb *= u_ghost;
-	#endif //DRAW_MODE_colorMask
-
+	gl_FragColor *= u_ghost;
 	#endif // ENABLE_ghost
 	
 	#ifdef DRAW_MODE_silhouette
