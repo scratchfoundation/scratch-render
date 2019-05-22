@@ -92,6 +92,7 @@ class BitmapSkin extends Skin {
 
         if (this._texture) {
             gl.bindTexture(gl.TEXTURE_2D, this._texture);
+            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureData);
             this._silhouette.update(textureData);
         } else {
@@ -99,7 +100,8 @@ class BitmapSkin extends Skin {
             const textureOptions = {
                 auto: true,
                 wrap: gl.CLAMP_TO_EDGE,
-                src: textureData
+                src: textureData,
+                premultiplyAlpha: true
             };
 
             this._texture = twgl.createTexture(gl, textureOptions);

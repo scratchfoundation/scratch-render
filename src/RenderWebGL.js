@@ -1621,12 +1621,7 @@ class RenderWebGL extends EventEmitter {
 
             twgl.setUniforms(currentShader, uniforms);
             
-            /* adjust blend function for this skin */
-            if (drawable.skin.hasPremultipliedAlpha){
-                gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-            } else {
-                gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-            }
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             
             twgl.drawBufferInfo(gl, this._bufferInfo, gl.TRIANGLES);
         }

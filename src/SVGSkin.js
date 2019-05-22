@@ -61,6 +61,22 @@ class SVGSkin extends Skin {
     }
 
     /**
+     * Set this skin's texture from canvas image data.
+     * @param {ImageData} textureData - The canvas image data to set the texture to.
+     */
+    _setTexture (textureData) {
+        const gl = this._renderer.gl;
+
+        gl.bindTexture(gl.TEXTURE_2D, this._texture);
+        // Canvas image data comes un-premultiplied, but premultiplied alpha is necessary for proper blending.
+        // See http://www.realtimerendering.com/blog/gpus-prefer-premultiplication/
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureData);
+
+        this._silhouette.update(textureData);
+    }
+
+    /**
      * @param {Array<number>} scale - The scaling factors to be used, each in the [0,100] range.
      * @return {WebGLTexture} The GL texture representation of this skin when drawing at the given scale.
      */
@@ -81,10 +97,7 @@ class SVGSkin extends Skin {
                     const context = canvas.getContext('2d');
                     const textureData = context.getImageData(0, 0, canvas.width, canvas.height);
 
-                    const gl = this._renderer.gl;
-                    gl.bindTexture(gl.TEXTURE_2D, this._texture);
-                    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureData);
-                    this._silhouette.update(textureData);
+                    this._setTexture(textureData);
                 }
             });
         }
@@ -112,19 +125,16 @@ class SVGSkin extends Skin {
             const textureData = context.getImageData(0, 0, canvas.width, canvas.height);
 
             if (this._texture) {
-                gl.bindTexture(gl.TEXTURE_2D, this._texture);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureData);
-                this._silhouette.update(textureData);
+                this._setTexture(textureData);
             } else {
                 // TODO: mipmaps?
                 const textureOptions = {
                     auto: true,
-                    wrap: gl.CLAMP_TO_EDGE,
-                    src: textureData
+                    wrap: gl.CLAMP_TO_EDGE
                 };
 
                 this._texture = twgl.createTexture(gl, textureOptions);
-                this._silhouette.update(textureData);
+                this._setTexture(textureData);
             }
 
             const maxDimension = Math.max(this._svgRenderer.canvas.width, this._svgRenderer.canvas.height);
