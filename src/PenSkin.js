@@ -330,6 +330,7 @@ class PenSkin extends Skin {
      */
     _exitDrawLineOnBuffer () {
         const gl = this._renderer.gl;
+
         twgl.bindFramebufferInfo(gl, null);
     }
 
