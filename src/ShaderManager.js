@@ -169,14 +169,14 @@ ShaderManager.DRAW_MODE = {
     colorMask: 'colorMask',
 
     /**
-     * Sample a "texture" to draw a line with caps.
+     * Un-premultiply alpha, for drawable extraction to a canvas.
      */
-    lineSample: 'lineSample',
+    straightAlpha: 'straightAlpha',
 
     /**
-     * Draw normally except for pre-multiplied alpha
+     * Sample a "texture" to draw a line with caps.
      */
-    stamp: 'stamp'
+    lineSample: 'lineSample'
 };
 
 module.exports = ShaderManager;

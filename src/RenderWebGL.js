@@ -197,7 +197,7 @@ class RenderWebGL extends EventEmitter {
         gl.disable(gl.DEPTH_TEST);
         /** @todo disable when no partial transparency? */
         gl.enable(gl.BLEND);
-        gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
 
     /**
@@ -1117,7 +1117,7 @@ class RenderWebGL extends EventEmitter {
         gl.clear(gl.COLOR_BUFFER_BIT);
         try {
             gl.disable(gl.BLEND);
-            this._drawThese([drawableID], ShaderManager.DRAW_MODE.default, projection,
+            this._drawThese([drawableID], ShaderManager.DRAW_MODE.straightAlpha, projection,
                 {effectMask: ~ShaderManager.EFFECT_INFO.ghost.mask});
         } finally {
             gl.enable(gl.BLEND);
@@ -1435,7 +1435,7 @@ class RenderWebGL extends EventEmitter {
 
         try {
             gl.disable(gl.BLEND);
-            this._drawThese([stampID], ShaderManager.DRAW_MODE.stamp, projection, {ignoreVisibility: true});
+            this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {ignoreVisibility: true});
         } finally {
             gl.enable(gl.BLEND);
         }
@@ -1620,8 +1620,6 @@ class RenderWebGL extends EventEmitter {
             }
 
             twgl.setUniforms(currentShader, uniforms);
-            
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             
             twgl.drawBufferInfo(gl, this._bufferInfo, gl.TRIANGLES);
         }

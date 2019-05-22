@@ -196,9 +196,12 @@ void main()
 	#endif // DRAW_MODE_colorMask
 	#endif // DRAW_MODE_silhouette
 
+	#ifdef DRAW_MODE_straightAlpha
+	gl_FragColor.rgb /= gl_FragColor.a;
+	#endif //DRAW_MODE_straightAlpha
+
 	#else // DRAW_MODE_lineSample
-	gl_FragColor = u_lineColor;
-	gl_FragColor.a *= clamp(
+	gl_FragColor = u_lineColor * clamp(
 		// Scale the capScale a little to have an aliased region.
 		(u_capScale + u_aliasAmount -
 			u_capScale * 2.0 * distance(v_texCoord, vec2(0.5, 0.5))
