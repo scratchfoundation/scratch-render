@@ -345,7 +345,6 @@ class PenSkin extends Skin {
      */
     _exitDrawLineOnBuffer () {
         const gl = this._renderer.gl;
-
         twgl.bindFramebufferInfo(gl, null);
     }
 
@@ -488,9 +487,7 @@ class PenSkin extends Skin {
      */
     _enterDrawToBuffer () {
         const gl = this._renderer.gl;
-
         twgl.bindFramebufferInfo(gl, this._framebuffer);
-
         this._drawRectangleRegionEnter(this._stampShader, this._bounds);
     }
 
@@ -499,7 +496,6 @@ class PenSkin extends Skin {
      */
     _exitDrawToBuffer () {
         const gl = this._renderer.gl;
-
         twgl.bindFramebufferInfo(gl, null);
     }
 
@@ -633,9 +629,7 @@ class PenSkin extends Skin {
      */
     _enterDrawToSilhouetteBuffer () {
         const gl = this._renderer.gl;
-
         twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
-
         this._drawRectangleRegionEnter(this._silhouetteShader, this._bounds);
     }
 
@@ -644,7 +638,6 @@ class PenSkin extends Skin {
      */
     _exitDrawToSilhouetteBuffer () {
         const gl = this._renderer.gl;
-
         twgl.bindFramebufferInfo(gl, null);
     }
 
