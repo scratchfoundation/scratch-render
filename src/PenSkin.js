@@ -134,6 +134,8 @@ class PenSkin extends Skin {
         this._renderer.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
 
         this._setCanvasSize(renderer.getNativeSize());
+
+        this._silhouette.alphaMask = 255;
     }
 
     /**

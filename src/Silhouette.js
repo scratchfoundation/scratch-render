@@ -78,6 +78,14 @@ class Silhouette {
          */
         this._colorData = null;
 
+        /**
+         * Alpha mask for premultiplied alpha. 255 if this silhouette uses premultiplied alpha, 0 otherwise.
+         * This is weird, but will hopefully help with performance--
+         * once per pixel, this value is bitwise OR'd with the pixel's alpha value.
+         * @type {boolean}
+         */
+        this.alphaMask = 0;
+
         this.colorAtNearest = this.colorAtLinear = (_, dst) => dst.fill(0);
     }
 
