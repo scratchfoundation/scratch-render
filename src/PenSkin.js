@@ -665,7 +665,7 @@ class PenSkin extends Skin {
     }
 
     /**
-     * Prepare to draw a rectangle in the _toBufferDrawRegionId region.
+     * Prepare to draw to the silhouette buffer.
      */
     _enterDrawToSilhouetteBuffer () {
         const gl = this._renderer.gl;
@@ -676,7 +676,7 @@ class PenSkin extends Skin {
     }
 
     /**
-     * Return to a base state from _toBufferDrawRegionId.
+     * Return to a base state from _enterDrawToSilhouetteBuffer.
      */
     _exitDrawToSilhouetteBuffer () {
         const gl = this._renderer.gl;
