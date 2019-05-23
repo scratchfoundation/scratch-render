@@ -113,6 +113,12 @@ class PenSkin extends Skin {
         };
 
         /** @type {object} */
+        this._toSilhouetteDrawRegionId = {
+            enter: () => this._enterDrawToSilhouetteBuffer(),
+            exit: () => this._exitDrawToSilhouetteBuffer()
+        };
+
+        /** @type {object} */
         this._toBufferDrawRegionId = {
             enter: () => this._enterDrawToBuffer(),
             exit: () => this._exitDrawToBuffer()
@@ -121,21 +127,32 @@ class PenSkin extends Skin {
         /** @type {twgl.BufferInfo} */
         this._lineBufferInfo = null;
 
+        /** @type {twgl.BufferInfo} */
+        this._silhouetteBufferInfo = null;
+
         const NO_EFFECTS = 0;
         /** @type {twgl.ProgramInfo} */
-        this._stampShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
+        this._stampShader = this._renderer._shaderManager.getShader(
+            ShaderManager.DRAW_MODE.default, NO_EFFECTS
+        );
 
         /** @type {twgl.ProgramInfo} */
-        this._lineShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.lineSample, NO_EFFECTS);
+        this._silhouetteShader = this._renderer._shaderManager.getShader(
+            ShaderManager.DRAW_MODE.straightAlpha, NO_EFFECTS
+        );
+
+        /** @type {twgl.ProgramInfo} */
+        this._lineShader = this._renderer._shaderManager.getShader(
+            ShaderManager.DRAW_MODE.lineSample, NO_EFFECTS
+        );
 
         this._createLineGeometry();
+        this._createSilhouetteGeometry();
 
         this.onNativeSizeChanged = this.onNativeSizeChanged.bind(this);
         this._renderer.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
 
         this._setCanvasSize(renderer.getNativeSize());
-
-        this._silhouette.alphaMask = 255;
     }
 
     /**
@@ -298,6 +315,38 @@ class PenSkin extends Skin {
         };
 
         this._lineBufferInfo = twgl.createBufferInfoFromArrays(this._renderer.gl, quads);
+    }
+
+    /**
+     * Create 2D geometry for drawing this skin's contents to the silhouette framebuffer.
+     */
+    _createSilhouetteGeometry () {
+        const quads = {
+            a_position: {
+                numComponents: 2,
+                data: [
+                    -0.5, -0.5,
+                    0.5, -0.5,
+                    -0.5, 0.5,
+                    -0.5, 0.5,
+                    0.5, -0.5,
+                    0.5, 0.5
+                ]
+            },
+            a_texCoord: {
+                numComponents: 2,
+                data: [
+                    1, 0,
+                    0, 0,
+                    1, 1,
+                    1, 1,
+                    0, 0,
+                    0, 1
+                ]
+            }
+        };
+
+        this._silhouetteBufferInfo = twgl.createBufferInfoFromArrays(this._renderer.gl, quads);
     }
 
     /**
@@ -616,6 +665,44 @@ class PenSkin extends Skin {
     }
 
     /**
+     * Prepare to draw a rectangle in the _toBufferDrawRegionId region.
+     */
+    _enterDrawToSilhouetteBuffer () {
+        const gl = this._renderer.gl;
+
+        twgl.bindFramebufferInfo(gl, this._silhouetteBuffer);
+
+        this._drawRectangleRegionEnter(this._silhouetteShader, this._bounds);
+    }
+
+    /**
+     * Return to a base state from _toBufferDrawRegionId.
+     */
+    _exitDrawToSilhouetteBuffer () {
+        const gl = this._renderer.gl;
+
+        twgl.bindFramebufferInfo(gl, null);
+    }
+
+    /**
+     * Draw this skin's framebuffer contents to the silhouette buffer.
+     */
+    _drawToSilhouetteBuffer () {
+        const currentShader = this._silhouetteShader;
+        const bounds = this._bounds;
+
+        this._renderer.enterDrawRegion(this._toSilhouetteDrawRegionId);
+
+        this._drawRectangle(
+            currentShader,
+            this.getTexture(),
+            bounds,
+            -this._canvas.width / 2,
+            this._canvas.height / 2
+        );
+    }
+
+    /**
      * If there have been pen operations that have dirtied the canvas, update
      * now before someone wants to use our silhouette.
      */
@@ -630,7 +717,7 @@ class PenSkin extends Skin {
 
             const bounds = this._bounds;
 
-            this._renderer.enterDrawRegion(this._toBufferDrawRegionId);
+            this._drawToSilhouetteBuffer();
 
             // Sample the framebuffer's pixels into the silhouette instance
             const skinPixels = new Uint8Array(Math.floor(this._canvas.width * this._canvas.height * 4));

@@ -1773,7 +1773,7 @@ class RenderWebGL extends EventEmitter {
             */
             Drawable.sampleColor4b(vec, drawables[index].drawable, __blendColor);
             // if we are fully transparent, go to the next one "down"
-            const sampleAlpha = (__blendColor[3] | drawables[index].drawable.skin._silhouette.alphaMask) / 255;
+            const sampleAlpha = __blendColor[3] / 255;
             // premultiply alpha
             dst[0] += __blendColor[0] * blendAlpha * sampleAlpha;
             dst[1] += __blendColor[1] * blendAlpha * sampleAlpha;
