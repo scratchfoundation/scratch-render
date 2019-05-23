@@ -127,9 +127,6 @@ class PenSkin extends Skin {
         /** @type {twgl.BufferInfo} */
         this._lineBufferInfo = null;
 
-        /** @type {twgl.BufferInfo} */
-        this._silhouetteBufferInfo = null;
-
         const NO_EFFECTS = 0;
         /** @type {twgl.ProgramInfo} */
         this._stampShader = this._renderer._shaderManager.getShader(
@@ -147,7 +144,6 @@ class PenSkin extends Skin {
         );
 
         this._createLineGeometry();
-        this._createSilhouetteGeometry();
 
         this.onNativeSizeChanged = this.onNativeSizeChanged.bind(this);
         this._renderer.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
@@ -315,38 +311,6 @@ class PenSkin extends Skin {
         };
 
         this._lineBufferInfo = twgl.createBufferInfoFromArrays(this._renderer.gl, quads);
-    }
-
-    /**
-     * Create 2D geometry for drawing this skin's contents to the silhouette framebuffer.
-     */
-    _createSilhouetteGeometry () {
-        const quads = {
-            a_position: {
-                numComponents: 2,
-                data: [
-                    -0.5, -0.5,
-                    0.5, -0.5,
-                    -0.5, 0.5,
-                    -0.5, 0.5,
-                    0.5, -0.5,
-                    0.5, 0.5
-                ]
-            },
-            a_texCoord: {
-                numComponents: 2,
-                data: [
-                    1, 0,
-                    0, 0,
-                    1, 1,
-                    1, 1,
-                    0, 0,
-                    0, 1
-                ]
-            }
-        };
-
-        this._silhouetteBufferInfo = twgl.createBufferInfoFromArrays(this._renderer.gl, quads);
     }
 
     /**
