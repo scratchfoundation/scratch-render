@@ -1707,9 +1707,9 @@ class RenderWebGL extends EventEmitter {
 
             // Because leftEndPointIndex is initialized to -1, this is skipped for the bottom two rows.
             // It runs only when there are enough points in the left hull to make at least one line.
-            // If appending the current point to the left hull makes a clockwise turn,
+            // If appending the current point to the left hull makes a counter-clockwise turn,
             // we want to append the current point. Otherwise, we decrement the index of the "last" hull point until the
-            // current point makes a clockwise turn.
+            // current point makes a counter-clockwise turn.
             // This decrementing has the same effect as popping from the point list, but is hopefully faster.
             while (leftEndPointIndex > 0) {
                 if (determinant(leftHull[leftEndPointIndex], leftHull[leftEndPointIndex - 1], currentPoint) > 0) {
@@ -1738,7 +1738,7 @@ class RenderWebGL extends EventEmitter {
                 }
             }
 
-            // Because we're coming at this from the right, it goes counter-clockwise this time.
+            // Because we're coming at this from the right, it goes clockwise this time.
             while (rightEndPointIndex > 0) {
                 if (determinant(rightHull[rightEndPointIndex], rightHull[rightEndPointIndex - 1], currentPoint) < 0) {
                     break;
