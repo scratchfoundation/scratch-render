@@ -85,7 +85,6 @@ module.exports = [
         externals: {
             '!ify-loader!grapheme-breaker': 'grapheme-breaker',
             '!ify-loader!linebreak': 'linebreak',
-            'hull.js': true,
             'scratch-svg-renderer': true,
             'twgl.js': true,
             'xml-escape': true
