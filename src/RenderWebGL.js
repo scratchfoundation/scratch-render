@@ -1673,6 +1673,9 @@ class RenderWebGL extends EventEmitter {
         const leftHull = [];
         const rightHull = [];
 
+        // While convex hull algorithms usually push and pop values from the list of hull points,
+        // here, we keep indices for the "last" point in each array. Any points past these indices are ignored.
+        // This is functionally equivalent to pushing and popping from a "stack" of hull points.
         let leftEndPointIndex = -1;
         let rightEndPointIndex = -1;
 
@@ -1749,7 +1752,7 @@ class RenderWebGL extends EventEmitter {
 
         // Start off "hullPoints" with the left hull points. This is where we get rid of those dangling extra points.
         const hullPoints = leftHull.slice(0, leftEndPointIndex + 1);
-        // Add points from the right side to in reverse order so all points are clockwise from each other.
+        // Add points from the right side in reverse order so all points are ordered clockwise.
         for (let j = rightEndPointIndex; j >= 0; --j) {
             hullPoints.push(rightHull[j]);
         }
