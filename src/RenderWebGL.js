@@ -719,11 +719,11 @@ class RenderWebGL extends EventEmitter {
         return skin.calculateRotationCenter();
     }
 
-    /** 
+    /**
      * Update the Silhouettes for every Drawable in the given array of candidates.
      * @param {Array< {id, drawable, intersection} >} candidates The Drawable candidates to update the Silhouettes of.
      */
-    _updateSilhouettesForCandidates(candidates) {
+    _updateSilhouettesForCandidates (candidates) {
         for (const candidate of candidates) {
             candidate.drawable.skin.updateSilhouette();
         }
