@@ -719,6 +719,16 @@ class RenderWebGL extends EventEmitter {
         return skin.calculateRotationCenter();
     }
 
+    /** 
+     * Update the Silhouettes for every Drawable in the given array of candidates.
+     * @param {Array< {id, drawable, intersection} >} candidates The Drawable candidates to update the Silhouettes of.
+     */
+    _updateSilhouettesForCandidates(candidates) {
+        for (const candidate of candidates) {
+            candidate.drawable.skin.updateSilhouette();
+        }
+    }
+
     /**
      * Check if a particular Drawable is touching a particular color.
      * Unlike touching drawable, if the "tester" is invisble, we will still test.
@@ -743,12 +753,17 @@ class RenderWebGL extends EventEmitter {
             this._debugCanvas.height = bounds.height;
         }
 
+        const drawable = this._allDrawables[drawableID];
+
         // if there are just too many pixels to CPU render efficiently, we need to let readPixels happen
         if (bounds.width * bounds.height * (candidates.length + 1) >= maxPixelsForCPU) {
             this._isTouchingColorGpuStart(drawableID, candidates.map(({id}) => id).reverse(), bounds, color3b, mask3b);
+        } else {
+            // Otherwise, make sure the silhouettes are all up to date for the CPU
+            this._updateSilhouettesForCandidates(candidates);
+            drawable.skin.updateSilhouette();
         }
-
-        const drawable = this._allDrawables[drawableID];
+        
         const point = __isTouchingDrawablesPoint;
         const color = __touchingColor;
         const hasMask = Boolean(mask3b);
@@ -892,7 +907,12 @@ class RenderWebGL extends EventEmitter {
         // Get the union of all the candidates intersections.
         const bounds = this._candidatesBounds(candidates);
 
+        // Ensure the candidates' Silhouettes are up-to-date.
+        this._updateSilhouettesForCandidates(candidates);
+
         const drawable = this._allDrawables[drawableID];
+        drawable.skin.updateSilhouette();
+
         const point = __isTouchingDrawablesPoint;
 
         // This is an EXTREMELY brute force collision detector, but it is
@@ -1244,7 +1264,6 @@ class RenderWebGL extends EventEmitter {
         if (!drawable.skin || !drawable.skin.getTexture([100, 100])) return null;
 
         drawable.updateMatrix();
-        drawable.skin.updateSilhouette();
         const bounds = drawable.getFastBounds();
 
         // Limit queries to the stage size.
@@ -1282,7 +1301,6 @@ class RenderWebGL extends EventEmitter {
                 if (drawable.skin && drawable._visible) {
                     // Update the CPU position data
                     drawable.updateMatrix();
-                    drawable.skin.updateSilhouette();
                     const candidateBounds = drawable.getFastBounds();
                     if (bounds.intersects(candidateBounds)) {
                         result.push({
