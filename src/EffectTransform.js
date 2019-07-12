@@ -123,6 +123,10 @@ class EffectTransform {
      * @returns {Uint8ClampedArray} dst filled with the transformed color
      */
     static transformColor (drawable, color4b, dst, effectMask) {
+        const effects = drawable.getEnabledEffects() & effectMask;
+        // If no effects are enabled, don't get anything, create anything, or set anything; just give back the input.
+        if (effects === 0) return color4b;
+
         dst = dst || new Uint8ClampedArray(4);
         effectMask = effectMask || 0xffffffff;
         dst.set(color4b);
@@ -131,7 +135,6 @@ class EffectTransform {
         }
 
         const uniforms = drawable.getUniforms();
-        const effects = drawable.getEnabledEffects() & effectMask;
 
         if ((effects & ShaderManager.EFFECT_INFO.ghost.mask) !== 0) {
             // gl_FragColor.a *= u_ghost
@@ -187,11 +190,13 @@ class EffectTransform {
      * @return {twgl.v3} dst - The coordinate after being transform by effects.
      */
     static transformPoint (drawable, vec, dst = twgl.v3.create()) {
+        const effects = drawable.getEnabledEffects();
+        // If no effects are enabled, don't get anything, create anything, or set anything; just give back the input.
+        if (effects === 0) return vec;
+
         twgl.v3.copy(vec, dst);
 
         const uniforms = drawable.getUniforms();
-        const effects = drawable.getEnabledEffects();
-
         if ((effects & ShaderManager.EFFECT_INFO.mosaic.mask) !== 0) {
             // texcoord0 = fract(u_mosaic * texcoord0);
             dst[0] = uniforms.u_mosaic * dst[0] % 1;
