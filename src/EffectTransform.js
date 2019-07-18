@@ -123,14 +123,14 @@ class EffectTransform {
      * @returns {Uint8ClampedArray} dst filled with the transformed color
      */
     static transformColor (drawable, color4b, dst, effectMask) {
+        effectMask = effectMask || 0xffffffff;
         const effects = drawable.getEnabledEffects() & effectMask;
-        // If no effects are enabled, don't get anything, create anything, or set anything; just give back the input.
-        if (effects === 0) return color4b;
 
         dst = dst || new Uint8ClampedArray(4);
-        effectMask = effectMask || 0xffffffff;
+        
         dst.set(color4b);
-        if (dst[3] === 0) {
+        // If no effects are enabled, or the color is fully transparent, don't bother attempting any transformations.
+        if (effects === 0 || dst[3] === 0) {
             return dst;
         }
 
@@ -191,10 +191,9 @@ class EffectTransform {
      */
     static transformPoint (drawable, vec, dst = twgl.v3.create()) {
         const effects = drawable.getEnabledEffects();
-        // If no effects are enabled, don't get anything, create anything, or set anything; just give back the input.
-        if (effects === 0) return vec;
-
         twgl.v3.copy(vec, dst);
+        // If no effects are enabled, don't bother attempting any transformations.
+        if (effects === 0) return dst;
 
         const uniforms = drawable.getUniforms();
         if ((effects & ShaderManager.EFFECT_INFO.mosaic.mask) !== 0) {
