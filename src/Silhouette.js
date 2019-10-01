@@ -4,6 +4,8 @@
  * renders a pixel where it is drawn.
  */
 
+const safeGetImageData = require('./util/safe-get-image-data');
+
 /**
  * <canvas> element used to update Silhouette data from skin bitmap data.
  * @type {CanvasElement}
@@ -106,7 +108,7 @@ class Silhouette {
             }
             ctx.clearRect(0, 0, width, height);
             ctx.drawImage(bitmapData, 0, 0, width, height);
-            imageData = ctx.getImageData(0, 0, width, height);
+            imageData = safeGetImageData(ctx, width, height);
         }
 
         this._colorData = imageData.data;

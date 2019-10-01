@@ -2,6 +2,8 @@ const twgl = require('twgl.js');
 
 const Skin = require('./Skin');
 
+const safeGetImageData = require('./util/safe-get-image-data');
+
 class BitmapSkin extends Skin {
     /**
      * Create a new Bitmap Skin.
@@ -88,7 +90,7 @@ class BitmapSkin extends Skin {
             // Given a HTMLCanvasElement get the image data to pass to webgl and
             // Silhouette.
             const context = bitmapData.getContext('2d');
-            textureData = context.getImageData(0, 0, bitmapData.width, bitmapData.height);
+            textureData = safeGetImageData(context, bitmapData.width, bitmapData.height);
         }
 
         if (this._texture) {

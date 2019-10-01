@@ -3,6 +3,8 @@ const twgl = require('twgl.js');
 const Skin = require('./Skin');
 const SvgRenderer = require('scratch-svg-renderer').SVGRenderer;
 
+const safeGetImageData = require('./util/safe-get-image-data');
+
 const MAX_TEXTURE_DIMENSION = 2048;
 
 class SVGSkin extends Skin {
@@ -79,7 +81,8 @@ class SVGSkin extends Skin {
                 if (this._textureScale === newScale) {
                     const canvas = this._svgRenderer.canvas;
                     const context = canvas.getContext('2d');
-                    const textureData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const textureData = safeGetImageData(context, canvas.width, canvas.height);
+
 
                     const gl = this._renderer.gl;
                     gl.bindTexture(gl.TEXTURE_2D, this._texture);
@@ -109,7 +112,7 @@ class SVGSkin extends Skin {
             // regards to memory.
             const canvas = this._svgRenderer.canvas;
             const context = canvas.getContext('2d');
-            const textureData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const textureData = safeGetImageData(context, canvas.width, canvas.height);
 
             if (this._texture) {
                 gl.bindTexture(gl.TEXTURE_2D, this._texture);

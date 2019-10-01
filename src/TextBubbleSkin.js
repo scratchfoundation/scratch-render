@@ -3,6 +3,7 @@ const twgl = require('twgl.js');
 const TextWrapper = require('./util/text-wrapper');
 const CanvasMeasurementProvider = require('./util/canvas-measurement-provider');
 const Skin = require('./Skin');
+const safeGetImageData = require('./util/safe-get-image-data');
 
 const BubbleStyle = {
     MAX_LINE_WIDTH: 170, // Maximum width, in Scratch pixels, of a single line of text
@@ -261,7 +262,7 @@ class TextBubbleSkin extends Skin {
             this._textureDirty = false;
 
             const context = this._canvas.getContext('2d');
-            const textureData = context.getImageData(0, 0, this._canvas.width, this._canvas.height);
+            const textureData = safeGetImageData(context, this._canvas.width, this._canvas.height);
 
             const gl = this._renderer.gl;
 

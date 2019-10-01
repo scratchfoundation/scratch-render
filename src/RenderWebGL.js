@@ -13,6 +13,7 @@ const SVGSkin = require('./SVGSkin');
 const TextBubbleSkin = require('./TextBubbleSkin');
 const EffectTransform = require('./EffectTransform');
 const log = require('./util/log');
+const safeGetImageData = require('./util/safe-get-image-data');
 
 const __isTouchingDrawablesPoint = twgl.v3.create();
 const __candidatesBounds = new Rectangle();
@@ -861,7 +862,7 @@ class RenderWebGL extends EventEmitter {
             this._debugCanvas.width = bounds.width;
             this._debugCanvas.height = bounds.height;
             const context = this._debugCanvas.getContext('2d');
-            const imageData = context.getImageData(0, 0, bounds.width, bounds.height - stop);
+            const imageData = safeGetImageData(context, bounds.width, bounds.height - stop);
             imageData.data.set(pixels);
             context.putImageData(imageData, 0, 0);
         }
