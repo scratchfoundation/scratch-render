@@ -29,27 +29,35 @@ class Rectangle {
     /**
      * Initialize a Rectangle to the minimum AABB around a set of points.
      * @param {Array<Array<number>>} points Array of [x, y] points.
+     * @param {number} scale The "Scratch-space" area under each point sample.
      */
-    initFromPointsAABB (points) {
+    initFromPointsAABB (points, scale = 0) {
         this.left = Infinity;
         this.right = -Infinity;
         this.top = -Infinity;
         this.bottom = Infinity;
 
+        // Each point is the center of a pixel. However, said pixels each have area.
+        // We can think of the `scale` parameter as the 'diameter' of each area sample centered around each point.
+        // The bounds must be extended by the 'radius' of each sample on every side.
+        // Since nearest-neighbor sampling gives pixels a square area, the radius is sqrt(2) / 2 = 0.707...
+        // at its longest (from the center of the pixel to one of its corners).
+        const halfPixel = 0.7071067811865476 * scale;
+
         for (let i = 0; i < points.length; i++) {
             const x = points[i][0];
             const y = points[i][1];
-            if (x < this.left) {
-                this.left = x;
+            if ((x - halfPixel) < this.left) {
+                this.left = x - halfPixel;
             }
-            if (x > this.right) {
-                this.right = x;
+            if ((x + halfPixel) > this.right) {
+                this.right = x + halfPixel;
             }
-            if (y > this.top) {
-                this.top = y;
+            if ((y + halfPixel) > this.top) {
+                this.top = y + halfPixel;
             }
-            if (y < this.bottom) {
-                this.bottom = y;
+            if ((y - halfPixel) < this.bottom) {
+                this.bottom = y - halfPixel;
             }
         }
     }

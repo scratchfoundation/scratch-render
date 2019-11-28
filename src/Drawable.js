@@ -521,7 +521,7 @@ class Drawable {
         const transformedHullPoints = this._getTransformedHullPoints();
         // Search through transformed points to generate box on axes.
         result = result || new Rectangle();
-        result.initFromPointsAABB(transformedHullPoints);
+        result.initFromPointsAABB(transformedHullPoints, Math.max(this._scale[0], this._scale[1]) * 0.01);
         return result;
     }
 
@@ -545,7 +545,7 @@ class Drawable {
         const filteredHullPoints = transformedHullPoints.filter(p => p[1] > maxY - slice);
         // Search through filtered points to generate box on axes.
         result = result || new Rectangle();
-        result.initFromPointsAABB(filteredHullPoints);
+        result.initFromPointsAABB(filteredHullPoints, Math.max(this._scale[0], this._scale[1]) * 0.01);
         return result;
     }
 
