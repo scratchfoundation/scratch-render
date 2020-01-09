@@ -1888,12 +1888,12 @@ class RenderWebGL extends EventEmitter {
         // *Not* Scratch Space-- +y is bottom
         // Loop over all rows of pixels, starting at the top
         for (let y = 0; y < height; y++) {
-            _pixelPos[1] = y / height;
+            _pixelPos[1] = (y + 0.5) / height;
 
             // We start at the leftmost point, then go rightwards until we hit an opaque pixel
             let x = 0;
             for (; x < width; x++) {
-                _pixelPos[0] = x / width;
+                _pixelPos[0] = (x + 0.5) / width;
                 EffectTransform.transformPoint(drawable, _pixelPos, _effectPos);
                 if (drawable.skin.isTouchingLinear(_effectPos)) {
                     currentPoint = [x, y];
@@ -1930,7 +1930,7 @@ class RenderWebGL extends EventEmitter {
 
             // Now we repeat the process for the right side, looking leftwards for a pixel.
             for (x = width - 1; x >= 0; x--) {
-                _pixelPos[0] = x / width;
+                _pixelPos[0] = (x + 0.5) / width;
                 EffectTransform.transformPoint(drawable, _pixelPos, _effectPos);
                 if (drawable.skin.isTouchingLinear(_effectPos)) {
                     currentPoint = [x, y];
