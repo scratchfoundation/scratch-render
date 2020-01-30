@@ -8,11 +8,11 @@ const MAX_TEXTURE_DIMENSION = 2048;
 
 /**
  * All scaled renderings of the SVG are stored in an array. The 1.0 scale of
- * the SVG is stored at the 8th index. The smallest possible 1 / 256 scale
+ * the SVG is stored at the 3rd index. The smallest possible 1 / 8 scale
  * rendering is stored at the 0th index.
  * @const {number}
  */
-const INDEX_OFFSET = 8;
+const INDEX_OFFSET = 3;
 
 class SVGSkin extends Skin {
     /**
