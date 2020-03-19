@@ -108,7 +108,7 @@ class Skin extends EventEmitter {
      * @fires Skin.event:WasAltered
      */
     setRotationCenter (x, y) {
-        const emptySkin = this.size[0] === 0 && this.size[1] === 0;
+        const emptySkin = this.size[0] === 0 || this.size[1] === 0;
         // Compare a 32 bit x and y value against the stored 32 bit center
         // values.
         const changed = (
