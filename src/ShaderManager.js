@@ -171,7 +171,9 @@ ShaderManager.DRAW_MODE = {
     /**
      * Sample a "texture" to draw a line with caps.
      */
-    lineSample: 'lineSample'
+    lineSample: 'lineSample',
+
+    mystery: 'mystery'
 };
 
 module.exports = ShaderManager;

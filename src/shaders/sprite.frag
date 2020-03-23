@@ -39,6 +39,10 @@ uniform float u_capScale;
 uniform float u_aliasAmount;
 #endif // DRAW_MODE_lineSample
 
+#ifdef DRAW_MODE_mystery
+uniform vec2 u_mousePosition;
+#endif
+
 uniform sampler2D u_skin;
 
 varying vec2 v_texCoord;
@@ -112,6 +116,15 @@ void main()
 	#ifndef DRAW_MODE_lineSample
 	vec2 texcoord0 = v_texCoord;
 
+	#ifdef DRAW_MODE_mystery
+	vec2 mysteryCoord = texcoord0;
+	vec2 offset = vec2(u_mousePosition.x, 1.0 - u_mousePosition.y);
+	mysteryCoord -= offset;
+	const float SCALE_FACTOR = 0.85;
+	mysteryCoord *= vec2(SCALE_FACTOR, SCALE_FACTOR);
+	mysteryCoord += offset;
+	#endif
+
 	#ifdef ENABLE_mosaic
 	texcoord0 = fract(u_mosaic * texcoord0);
 	#endif // ENABLE_mosaic
@@ -154,6 +167,21 @@ void main()
 	#endif // ENABLE_fisheye
 
 	gl_FragColor = texture2D(u_skin, texcoord0);
+
+	#ifdef DRAW_MODE_mystery
+	const vec4 SHADOW_COLOR = vec4(0.0, 0.0, 0.0, 0.5);
+	const float SHADOW_BLUR = 0.0025;
+
+	float shadowSample1 = texture2D(u_skin, mysteryCoord + vec2(SHADOW_BLUR, SHADOW_BLUR)).a;
+	float shadowSample2 = texture2D(u_skin, mysteryCoord + vec2(-SHADOW_BLUR, SHADOW_BLUR)).a;
+	float shadowSample3 = texture2D(u_skin, mysteryCoord + vec2(SHADOW_BLUR, -SHADOW_BLUR)).a;
+	float shadowSample4 = texture2D(u_skin, mysteryCoord + vec2(-SHADOW_BLUR, -SHADOW_BLUR)).a;
+
+	float shadowAlpha = (shadowSample1 + shadowSample2 + shadowSample3 + shadowSample4) * 0.25;
+
+	vec4 shadow = SHADOW_COLOR * shadowAlpha;
+	gl_FragColor = gl_FragColor + (shadow * (1.0 - gl_FragColor.a));
+	#endif
 
 	#if defined(ENABLE_color) || defined(ENABLE_brightness)
 	// Divide premultiplied alpha values for proper color processing

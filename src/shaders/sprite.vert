@@ -15,7 +15,9 @@ void main() {
     vec2 position = a_position;
     position.y = clamp(position.y * u_positionScalar, -0.5, 0.5);
     gl_Position = u_projectionMatrix * u_modelMatrix * vec4(position, 0, 1);
-    #else
+    #elif defined(DRAW_MODE_mystery)
+	gl_Position = vec4(a_position * vec2(-2.0, 2.0), 0.0, 1.0);
+	#else
     gl_Position = u_projectionMatrix * u_modelMatrix * vec4(a_position, 0, 1);
     #endif
     v_texCoord = a_texCoord;
