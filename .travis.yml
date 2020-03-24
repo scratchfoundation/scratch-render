@@ -7,6 +7,7 @@ node_js:
 - node
 env:
   - NODE_ENV=production
+  - NPM_TAG=latest
 before_install:
   - google-chrome-stable --headless --no-sandbox --remote-debugging-port=9222 &
 install:
@@ -30,13 +31,17 @@ jobs:
       - VPKG=$($(npm bin)/json -f package.json version)
       - export VERSION=${VPKG}-prerelease.$(date +%Y%m%d%H%M%S)
       - npm --no-git-tag-version version $VERSION
+      - if [[ "$TRAVIS_BRANCH" == hotfix/* ]]; then export NPM_TAG=hotfix; fi # double brackets are important for matching the wildcard
       - git config --global user.email "$(git log --pretty=format:'%ae' -n1)"
       - git config --global user.name "$(git log --pretty=format:'%an' -n1)"
       deploy:
         provider: npm
         skip_cleanup: true
-        "on":
-          all_branches: true
-          condition: $RELEASE_BRANCHES =~ $TRAVIS_BRANCH
+        on:
+          branch:
+          - master
+          - develop
+          - hotfix/*
         email: $NPM_EMAIL
         api_key: $NPM_TOKEN
+        tag: $NPM_TAG
