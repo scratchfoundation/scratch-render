@@ -37,6 +37,14 @@ class Skin extends EventEmitter {
             u_skinSize: [0, 0],
 
             /**
+             * The "logical bounds" of this skin as opposed to its "texture bounds".
+             * These range from 0 to 1 to represent "all the way to the top/left" to "all the way to the bottom/right".
+             * X and Y components are top left corner, Z and W components are bottom right.
+             * @type {Array<number>}
+             */
+            u_logicalBounds: [0, 0, 1, 1],
+
+            /**
              * The actual WebGL texture object for the skin.
              * @type {WebGLTexture}
              */

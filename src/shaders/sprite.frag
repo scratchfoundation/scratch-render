@@ -37,17 +37,21 @@ uniform float u_ghost;
 uniform vec4 u_lineColor;
 uniform float u_lineThickness;
 uniform float u_lineLength;
+varying vec2 v_texCoord;
 #endif // DRAW_MODE_line
 
 #ifdef DRAW_MODE_background
 uniform vec4 u_backgroundColor;
 #endif // DRAW_MODE_background
 
-uniform sampler2D u_skin;
-
-#ifndef DRAW_MODE_background
-varying vec2 v_texCoord;
+#if !(defined(DRAW_MODE_line) || defined(DRAW_MODE_background))
+// TODO: conditionally compile this only if distortion effects are enabled.
+// Ask Chris if you can use macros in ifdefs so I can define a DISTORTION_EFFECTS_ENABLED macro and use that.
+uniform vec4 u_logicalBounds;
+varying vec2 v_logicalCoord;
 #endif
+
+uniform sampler2D u_skin;
 
 // Add this to divisors to prevent division by 0, which results in NaNs propagating through calculations.
 // Smaller values can cause problems on some mobile devices.
@@ -116,7 +120,10 @@ const vec2 kCenter = vec2(0.5, 0.5);
 void main()
 {
 	#if !(defined(DRAW_MODE_line) || defined(DRAW_MODE_background))
-	vec2 texcoord0 = v_texCoord;
+	// To properly render subpixel-positioned SVG viewboxes, there's some "slack space" around the edges of the texture.
+	// The "logical coordinates" exclude this slack space, starting at the top left of the SVG's *content* and ending
+	// at the bottom right. Distortion effects are applied in this space so as to ensure their "center" is correct.
+	vec2 texcoord0 = v_logicalCoord;
 
 	#ifdef ENABLE_mosaic
 	texcoord0 = fract(u_mosaic * texcoord0);
@@ -159,7 +166,20 @@ void main()
 	}
 	#endif // ENABLE_fisheye
 
+	// After doing all distortions in "logical texture space", convert back to actual texture space
+	texcoord0 = (texcoord0 * (u_logicalBounds.zw - u_logicalBounds.xy)) + u_logicalBounds.xy;
+
 	gl_FragColor = texture2D(u_skin, texcoord0);
+
+	#if defined(ENABLE_pixelate) || defined(ENABLE_mosaic)
+	// Ensure that the pixels don't extend outside the "logical bounds"
+	gl_FragColor *= float(
+		v_logicalCoord.x >= 0.0 &&
+		v_logicalCoord.y >= 0.0 &&
+		v_logicalCoord.x <= 1.0 &&
+		v_logicalCoord.y <= 1.0
+	);
+	#endif
 
 	#if defined(ENABLE_color) || defined(ENABLE_brightness)
 	// Divide premultiplied alpha values for proper color processing
@@ -220,6 +240,11 @@ void main()
 	// Un-premultiply alpha.
 	gl_FragColor.rgb /= gl_FragColor.a + epsilon;
 	#endif
+
+	// TODO: REMOVE THIS DEBUG CODE
+	float isLogical = float(v_logicalCoord.x > 0.0 && v_logicalCoord.y > 0.0 && v_logicalCoord.x < 1.0 && v_logicalCoord.y < 1.0);
+	gl_FragColor.rgb += mix(vec3(1.0, 0.5, 0.5), vec3(0.5, 0.5, 1.0), isLogical) * (1.0 - gl_FragColor.a);
+	gl_FragColor.a = 1.0;
 
 	#endif // !(defined(DRAW_MODE_line) || defined(DRAW_MODE_background))
 

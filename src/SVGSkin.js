@@ -248,6 +248,12 @@ class SVGSkin extends Skin {
             (center[1] / MIN_TEXTURE_SCALE) + yOffset
         ];
 
+        // Set "logical bounds" as fractions of the adjusted bounding box size
+        this._uniforms.u_logicalBounds[0] = xOffset / adjustedSize[0];
+        this._uniforms.u_logicalBounds[1] = yOffset / adjustedSize[1];
+        this._uniforms.u_logicalBounds[2] = (width + xOffset) / adjustedSize[0];
+        this._uniforms.u_logicalBounds[3] = (height + yOffset) / adjustedSize[1];
+
         // Adjust the SVG tag's viewbox to match the texture dimensions and offset.
         // This will ensure that the SVG is rendered at the proper sub-pixel position,
         // and with integer dimensions at power-of-two sizes down to MIN_TEXTURE_SCALE.

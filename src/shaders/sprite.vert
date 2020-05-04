@@ -17,7 +17,9 @@ const float epsilon = 1e-3;
 #if !(defined(DRAW_MODE_line) || defined(DRAW_MODE_background))
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelMatrix;
+uniform vec4 u_logicalBounds;
 attribute vec2 a_texCoord;
+varying vec2 v_logicalCoord;
 #endif
 
 attribute vec2 a_position;
@@ -71,5 +73,6 @@ void main() {
 	#else
 	gl_Position = u_projectionMatrix * u_modelMatrix * vec4(a_position, 0, 1);
 	v_texCoord = a_texCoord;
+	v_logicalCoord = (a_texCoord - u_logicalBounds.xy) / (u_logicalBounds.zw - u_logicalBounds.xy);
 	#endif
 }
