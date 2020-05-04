@@ -751,7 +751,7 @@ class RenderWebGL extends EventEmitter {
      */
     getSkinSize (skinID) {
         const skin = this._allSkins[skinID];
-        return skin.size;
+        return skin.nativeSize;
     }
 
     /**
@@ -1829,7 +1829,7 @@ class RenderWebGL extends EventEmitter {
     _getConvexHullPointsForDrawable (drawableID) {
         const drawable = this._allDrawables[drawableID];
 
-        const [width, height] = drawable.skin.size;
+        const [width, height] = drawable.skin.quadSize;
         // No points in the hull if invisible or size is 0.
         if (!drawable.getVisible() || width === 0 || height === 0) {
             return [];

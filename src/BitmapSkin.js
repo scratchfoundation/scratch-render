@@ -34,9 +34,9 @@ class BitmapSkin extends Skin {
     }
 
     /**
-     * @return {Array<number>} the "native" size, in texels, of this skin.
+     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
      */
-    get size () {
+    get nativeSize () {
         return [this._textureSize[0] / this._costumeResolution, this._textureSize[1] / this._costumeResolution];
     }
 
@@ -91,8 +91,8 @@ class BitmapSkin extends Skin {
         this._textureSize = BitmapSkin._getBitmapSize(bitmapData);
 
         if (typeof rotationCenter === 'undefined') rotationCenter = this.calculateRotationCenter();
-        this._rotationCenter[0] = rotationCenter[0];
-        this._rotationCenter[1] = rotationCenter[1];
+        this._nativeRotationCenter[0] = rotationCenter[0];
+        this._nativeRotationCenter[1] = rotationCenter[1];
 
         this.emit(Skin.Events.WasAltered);
     }

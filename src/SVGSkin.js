@@ -65,9 +65,9 @@ class SVGSkin extends Skin {
     }
 
     /**
-     * @return {Array<number>} the natural size, in Scratch units, of this skin.
+     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
      */
-    get size () {
+    get nativeSize () {
         return [this._size[0], this._size[1]];
     }
 
@@ -223,8 +223,8 @@ class SVGSkin extends Skin {
             if (typeof rotationCenter === 'undefined') rotationCenter = this.calculateRotationCenter();
             // Compensate for viewbox offset.
             // See https://github.com/LLK/scratch-render/pull/90.
-            this._rotationCenter[0] = rotationCenter[0] - x;
-            this._rotationCenter[1] = rotationCenter[1] - y;
+            this._nativeRotationCenter[0] = rotationCenter[0] - x;
+            this._nativeRotationCenter[1] = rotationCenter[1] - y;
 
             this._svgImageLoaded = true;
 

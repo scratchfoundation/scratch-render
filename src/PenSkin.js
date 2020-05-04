@@ -110,9 +110,9 @@ class PenSkin extends Skin {
     }
 
     /**
-     * @return {Array<number>} the "native" size, in texels, of this skin. [width, height]
+     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
      */
-    get size () {
+    get nativeSize () {
         return this._size;
     }
 
@@ -287,8 +287,8 @@ class PenSkin extends Skin {
         const [width, height] = canvasSize;
 
         this._size = canvasSize;
-        this._rotationCenter[0] = width / 2;
-        this._rotationCenter[1] = height / 2;
+        this._nativeRotationCenter[0] = width / 2;
+        this._nativeRotationCenter[1] = height / 2;
 
         const gl = this._renderer.gl;
 

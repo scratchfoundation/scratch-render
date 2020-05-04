@@ -339,8 +339,8 @@ class Drawable {
         if (this._rotationCenterDirty && this.skin !== null) {
             // twgl version of the following in function work.
             // let rotationAdjusted = twgl.v3.subtract(
-            //     this.skin.rotationCenter,
-            //     twgl.v3.divScalar(this.skin.size, 2, this._rotationAdjusted),
+            //     this.skin.quadRotationCenter,
+            //     twgl.v3.divScalar(this.skin.quadSize, 2, this._rotationAdjusted),
             //     this._rotationAdjusted
             // );
             // rotationAdjusted = twgl.v3.multiply(
@@ -355,8 +355,8 @@ class Drawable {
             // Locally assign rotationCenter and skinSize to keep from having
             // the Skin getter properties called twice while locally assigning
             // their components for readability.
-            const rotationCenter = this.skin.rotationCenter;
-            const skinSize = this.skin.size;
+            const rotationCenter = this.skin.quadRotationCenter;
+            const skinSize = this.skin.quadSize;
             const center0 = rotationCenter[0];
             const center1 = rotationCenter[1];
             const skinSize0 = skinSize[0];
@@ -375,7 +375,7 @@ class Drawable {
         if (this._skinScaleDirty && this.skin !== null) {
             // twgl version of the following in function work.
             // const scaledSize = twgl.v3.divScalar(
-            //     twgl.v3.multiply(this.skin.size, this._scale),
+            //     twgl.v3.multiply(this.skin.quadSize, this._scale),
             //     100
             // );
             // // was NaN because the vectors have only 2 components.
@@ -383,7 +383,7 @@ class Drawable {
 
             // Locally assign skinSize to keep from having the Skin getter
             // properties called twice.
-            const skinSize = this.skin.size;
+            const skinSize = this.skin.quadSize;
             const scaledSize = this._skinScale;
             scaledSize[0] = skinSize[0] * this._scale[0] / 100;
             scaledSize[1] = skinSize[1] * this._scale[1] / 100;
@@ -597,7 +597,7 @@ class Drawable {
         }
 
         const projection = twgl.m4.ortho(-1, 1, -1, 1, -1, 1);
-        const skinSize = this.skin.size;
+        const skinSize = this.skin.quadSize;
         const halfXPixel = 1 / skinSize[0] / 2;
         const halfYPixel = 1 / skinSize[1] / 2;
         const tm = twgl.m4.multiply(this._uniforms.u_modelMatrix, projection);

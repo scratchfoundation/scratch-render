@@ -18,7 +18,7 @@ class Skin extends EventEmitter {
         this._id = id;
 
         /** @type {Vec3} */
-        this._rotationCenter = twgl.v3.create(0, 0);
+        this._nativeRotationCenter = twgl.v3.create(0, 0);
 
         /** @type {WebGLTexture} */
         this._texture = null;
@@ -67,18 +67,37 @@ class Skin extends EventEmitter {
     }
 
     /**
-     * @returns {Vec3} the origin, in object space, about which this Skin should rotate.
+     * @returns {twgl.v3} the origin, in object space, about which this Skin's "native size" bounds should rotate.
      */
-    get rotationCenter () {
-        return this._rotationCenter;
+    get nativeRotationCenter () {
+        return this._nativeRotationCenter;
+    }
+
+    /**
+     * @returns {twgl.v3} the origin, in object space, about which this Skin's "quadrilateral size" bounds should
+     * rotate. By default, this is the same as the native rotation center.
+     */
+    get quadRotationCenter () {
+        return this._nativeRotationCenter;
     }
 
     /**
      * @abstract
-     * @return {Array<number>} the "native" size, in texels, of this skin.
+     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
      */
-    get size () {
+    get nativeSize () {
         return [0, 0];
+    }
+
+    /**
+     * @abstract
+     * @return {Array<number>} the size of this skin's actual texture, aka the dimensions of the actual rendered
+     * quadrilateral at 1x scale, in "stage pixels". To properly handle positioning of vector sprite's viewboxes,
+     * some "slack space" is added to this size, but not to the nativeSize.
+     */
+    get quadSize () {
+        // TODO: is it significantly expensive to go through two nested getters for every non-vector sprite?
+        return this.nativeSize;
     }
 
     /**
@@ -99,7 +118,7 @@ class Skin extends EventEmitter {
      * @return {Array<number>} the center of the current bounding box
      */
     calculateRotationCenter () {
-        return [this.size[0] / 2, this.size[1] / 2];
+        return [this.nativeSize[0] / 2, this.nativeSize[1] / 2];
     }
 
     /**
@@ -129,7 +148,7 @@ class Skin extends EventEmitter {
      */
     getUniforms (scale) {
         this._uniforms.u_skin = this.getTexture(scale);
-        this._uniforms.u_skinSize = this.size;
+        this._uniforms.u_skinSize = this.nativeSize;
         return this._uniforms;
     }
 
@@ -185,8 +204,8 @@ class Skin extends EventEmitter {
             this._emptyImageTexture = twgl.createTexture(gl, textureOptions);
         }
 
-        this._rotationCenter[0] = 0;
-        this._rotationCenter[1] = 0;
+        this._nativeRotationCenter[0] = 0;
+        this._nativeRotationCenter[1] = 0;
 
         this._silhouette.update(this._emptyImageData);
         this.emit(Skin.Events.WasAltered);

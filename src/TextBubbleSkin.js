@@ -85,9 +85,9 @@ class TextBubbleSkin extends Skin {
     }
 
     /**
-     * @return {Array<number>} the dimensions, in Scratch units, of this skin.
+     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
      */
-    get size () {
+    get nativeSize () {
         if (this._textDirty) {
             this._reflowLines();
         }
