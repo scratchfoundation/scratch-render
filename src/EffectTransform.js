@@ -138,12 +138,15 @@ class EffectTransform {
         dst[1] = (dst[1] - skinUniforms.u_logicalBounds[1]) /
             (skinUniforms.u_logicalBounds[3] - skinUniforms.u_logicalBounds[1]);
 
-        if ((effects & ShaderManager.EFFECT_INFO.mosaic.mask) !== 0) {
+        const pointInsideLogicalBounds = dst[0] >= 0 && dst[0] <= 1 && dst[1] >= 0 && dst[1] <= 1;
+
+        // Only apply mosaic and pixelate effects to points inside the "logical bounds".
+        if ((effects & ShaderManager.EFFECT_INFO.mosaic.mask) !== 0 && pointInsideLogicalBounds) {
             // texcoord0 = fract(u_mosaic * texcoord0);
             dst[0] = uniforms.u_mosaic * dst[0] % 1;
             dst[1] = uniforms.u_mosaic * dst[1] % 1;
         }
-        if ((effects & ShaderManager.EFFECT_INFO.pixelate.mask) !== 0) {
+        if ((effects & ShaderManager.EFFECT_INFO.pixelate.mask) !== 0 && pointInsideLogicalBounds) {
             // vec2 pixelTexelSize = u_skinSize / u_pixelate;
             const texelX = skinUniforms.u_skinSize[0] / uniforms.u_pixelate;
             const texelY = skinUniforms.u_skinSize[1] / uniforms.u_pixelate;
