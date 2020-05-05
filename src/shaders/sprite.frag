@@ -241,11 +241,6 @@ void main()
 	gl_FragColor.rgb /= gl_FragColor.a + epsilon;
 	#endif
 
-	// TODO: REMOVE THIS DEBUG CODE
-	float isLogical = float(v_logicalCoord.x > 0.0 && v_logicalCoord.y > 0.0 && v_logicalCoord.x < 1.0 && v_logicalCoord.y < 1.0);
-	gl_FragColor.rgb += mix(vec3(1.0, 0.5, 0.5), vec3(0.5, 0.5, 1.0), isLogical) * (1.0 - gl_FragColor.a);
-	gl_FragColor.a = 1.0;
-
 	#endif // !(defined(DRAW_MODE_line) || defined(DRAW_MODE_background))
 
 	#ifdef DRAW_MODE_line
