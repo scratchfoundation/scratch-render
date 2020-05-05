@@ -281,6 +281,8 @@ class SVGSkin extends Skin {
         const {width, height} = svgTag.viewBox.baseVal;
         if (width === 0 || height === 0) {
             super.setEmptyImageData();
+            this._quadRotationCenter[0] = 0;
+            this._quadRotationCenter[1] = 0;
             return;
         }
 
