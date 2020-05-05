@@ -108,6 +108,9 @@ class Drawable {
         this._inverseTransformDirty = true;
         this._visible = true;
 
+        this._aabbDirty = true;
+        this._aabb = new Rectangle();
+
         /** A bitmask identifying which effects are currently in use.
          * @readonly
          * @type {int} */
@@ -144,6 +147,7 @@ class Drawable {
         this._transformDirty = true;
         this._inverseTransformDirty = true;
         this._transformedHullDirty = true;
+        this._aabbDirty = true;
     }
 
     /**
@@ -552,7 +556,7 @@ class Drawable {
 
     /**
      * Get the rough axis-aligned bounding box for the Drawable.
-     * Calculated by transforming the skin's bounds.
+     * Calculated by transforming the skin's "native" bounds.
      * Note that this is less precise than the box returned by `getBounds`,
      * which is tightly snapped to account for a Drawable's transparent regions.
      * `getAABB` returns a much less accurate bounding box, but will be much
@@ -561,12 +565,66 @@ class Drawable {
      * @return {!Rectangle} Rough axis-aligned bounding box for Drawable.
      */
     getAABB (result) {
-        if (this._transformDirty) {
-            this._calculateTransform();
+        if (this._aabbDirty) {
+            if (this._transformDirty) {
+                this._calculateTransform();
+            }
+
+            if (this.skin) {
+                // This drawable's transform matrix is calculated to use the rotation center and dimensions of the
+                // rendered quadrilateral, which sometimes includes extra "slack space" pixels around the edges.
+                // We don't want to include that slack space here, so we cannot calculate the AABB from the matrix,
+                // and must use the "native" skin size and rotation center.
+
+                // Pull out rotation sine/cosine from matrix
+                const [cos, sin] = this._rotationMatrix;
+
+                const [nativeSizeX, nativeSizeY] = this.skin.nativeSize;
+                const scaleX = this._scale[0] / 100;
+                const scaleY = this._scale[1] / 100;
+                // Unrotated top right corner of the bounding box, relative to its midpoint
+                // (not the skin's rotation center!)
+                const origRight = nativeSizeX * 0.5 * scaleX;
+                const origTop = nativeSizeY * 0.5 * scaleY;
+
+                // Rotate the top right corner around the bounding box's midpoint, and use this to obtain the top and
+                // right edges.
+                const topEdge = Math.abs(origRight * sin) + Math.abs(origTop * cos);
+                const rightEdge = Math.abs(origRight * cos) + Math.abs(origTop * sin);
+
+                // Calculate the offset from the bounding box's midpoint to the skin's rotation center.
+                const [centerX, centerY] = this.skin.nativeRotationCenter;
+                const adjustedX = origRight - (centerX * scaleX);
+                const adjustedY = origTop - (centerY * scaleY);
+
+                // Use that offset to rotate the bounding box's midpoint about the skin's rotation center, then add that
+                // to the drawable's position to obtain the final translation.
+                const offsetX = -(sin * adjustedY) - (cos * adjustedX) + this._position[0];
+                const offsetY = (cos * adjustedY) - (sin * adjustedX) + this._position[1];
+
+                this._aabb.initFromBounds(
+                    -rightEdge + offsetX,
+                    rightEdge + offsetX,
+                    -topEdge + offsetY,
+                    topEdge + offsetY
+                );
+            } else {
+                // TODO: we should probably return null in this case, but most (all?) Rectangle-returning methods always
+                // return Rectangles, even when it may not make sense to do so (e.g. when the skin is missing). Let's
+                // match the other methods for now, and do what they do.
+                this._aabb.initFromBounds(0, 0, 0, 0);
+            }
+
+            this._aabbDirty = false;
         }
-        const tm = this._uniforms.u_modelMatrix;
+
         result = result || new Rectangle();
-        result.initFromModelMatrix(tm);
+        result.initFromBounds(
+            this._aabb.left,
+            this._aabb.right,
+            this._aabb.bottom,
+            this._aabb.top
+        );
         return result;
     }
 
