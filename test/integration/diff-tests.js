@@ -23,20 +23,64 @@ const testFile = (file, page) => test(file, async t => {
         // back across as a promise, so we will just log all the says that happen
         // for parsing after.
 
-        const testCpuDiff = () => {
-            const cpuData = renderCpu(render);
+        const drawDiffImage = (left, right) => {
+            const leftCanvas = left.canvas;
+            const rightCanvas = right.canvas;
 
+            const {width, height} = leftCanvas;
+            if (rightCanvas.width !== width || rightCanvas.height !== height) {
+                throw new Error('canvases to be diffed have different dimensions');
+            }
+
+            // room at the top to draw text labels
+            const TOP_PADDING = 20;
+            const diffCanvas = document.createElement('canvas');
+            diffCanvas.width = width * 3;
+            diffCanvas.height = height + TOP_PADDING;
+
+            const diffCtx = diffCanvas.getContext('2d');
+
+            diffCtx.fillStyle = 'black';
+            diffCtx.fillRect(0, 0, diffCanvas.width, TOP_PADDING);
+
+            diffCtx.globalCompositeOperation = 'difference';
+            diffCtx.fillStyle = 'white';
+            diffCtx.fillRect(width, 0, width, TOP_PADDING);
+            diffCtx.font = '16px sans-serif';
+            diffCtx.fillText(left.label, 10, TOP_PADDING - 4);
+            diffCtx.fillText('Diff', width + 10, TOP_PADDING - 4);
+            diffCtx.fillText(right.label, (width * 2) + 10, TOP_PADDING - 4);
+
+            diffCtx.globalCompositeOperation = 'source-over';
+            diffCtx.drawImage(leftCanvas, 0, TOP_PADDING);
+            diffCtx.drawImage(rightCanvas, width * 2, TOP_PADDING);
+
+            diffCtx.globalCompositeOperation = 'difference';
+            diffCtx.drawImage(leftCanvas, width, TOP_PADDING);
+            diffCtx.drawImage(rightCanvas, width, TOP_PADDING);
+
+            return diffCanvas.toDataURL();
+        };
+
+        const testCpuDiff = cpuData => {
             // Get the image data from the GPU-rendered canvas
+            const [width, height] = render.getNativeSize();
+            if (canvas.width !== width || canvas.height !== height) {
+                throw new Error('GPU canvas dimensions do not match "native" size');
+            }
             render.draw();
+
+            // The renderer canvas has a WebGL context so we can't directly call getImageData on it.
+            // Instead, draw it onto another canvas then call getImageData on *that* canvas.
             const mergeCanvas = document.createElement('canvas');
-            mergeCanvas.width = canvas.width;
-            mergeCanvas.height = canvas.height;
+            mergeCanvas.width = width;
+            mergeCanvas.height = height;
             const mergeCtx = mergeCanvas.getContext('2d');
             mergeCtx.drawImage(canvas, 0, 0);
-            const gpuData = mergeCtx.getImageData(0, 0, 480, 360);
+
+            const gpuData = mergeCtx.getImageData(0, 0, width, height);
 
             let error = 0;
-
             for (let i = 0; i < cpuData.data.length; i++) {
                 error += Math.abs(cpuData.data[i] - gpuData.data[i]);
             }
@@ -44,17 +88,13 @@ const testFile = (file, page) => test(file, async t => {
             // Average out the error across the three color channels
             error /= 3;
 
-            // Calculate a visual diff
-            const cpuDataCanvas = document.createElement('canvas');
-            cpuDataCanvas.width = cpuData.width;
-            cpuDataCanvas.height = cpuData.height;
-            cpuDataCanvas.getContext('2d').putImageData(cpuData, 0, 0);
-            mergeCtx.globalCompositeOperation = 'difference';
-            mergeCtx.drawImage(cpuDataCanvas, 0, 0);
+            // Normalize so 1 = completely different, 0 = exactly the same
+            error /= 255;
 
             return {
                 error,
-                diffImage: mergeCanvas.toDataURL()
+                errorPercentage: 100 * (error / (width * height)),
+                cpuData
             };
         };
 
@@ -62,20 +102,52 @@ const testFile = (file, page) => test(file, async t => {
         const messages = [];
         const TIMEOUT = 5000;
 
-        const GLOW_ID = 'WdZ1xLb].Q$}5bVVu|at';
+        vm.runtime.on('SAY', (_, __, message) => {
+            const messageSplit = message.split(' ');
+            if (messageSplit.length < 1) throw new Error(`Could not parse say bubble '${message}'`);
 
-        // TODO: hook onto a better event!
-        vm.runtime.on('SCRIPT_GLOW_ON', ({id}) => {
-            if (id === GLOW_ID) {
-                const {error, diffImage} = testCpuDiff();
+            if (messageSplit[0] === 'cpu-gpu-difference') {
+                const cpuData = renderCpu(render);
+                const {error, errorPercentage} = testCpuDiff(cpuData);
 
-                const maxError = 50;
+                // Support both percentage errors ('0.1%') and error in pixels ('10px')
+                const expectedErrorString = messageSplit[1];
+                let actualErrorString;
+                let expectedErrorValue;
+                let actualErrorValue;
+                if (messageSplit[1].endsWith('%')) {
+                    actualErrorString = `${errorPercentage.toFixed(4)}%`;
+                    expectedErrorValue = Number(messageSplit[1].slice(0, -1));
+                    actualErrorValue = errorPercentage;
+                } else if (messageSplit[1].endsWith('px')) {
+                    actualErrorString = `${error}px`;
+                    expectedErrorValue = Number(messageSplit[1].slice(0, -2));
+                    actualErrorValue = error;
+                } else {
+                    throw new Error(`Can't measure error in ${messageSplit[1]}`);
+                }
+
+                const failed = actualErrorValue > expectedErrorValue;
+
+                let diffImage;
+                if (failed) {
+                    // Calculate a visual diff
+                    const cpuDataCanvas = document.createElement('canvas');
+                    cpuDataCanvas.width = cpuData.width;
+                    cpuDataCanvas.height = cpuData.height;
+                    cpuDataCanvas.getContext('2d').putImageData(cpuData, 0, 0);
+
+                    diffImage = drawDiffImage(
+                        {canvas, label: 'GPU'},
+                        {canvas: cpuDataCanvas, label: 'CPU'}
+                    );
+                }
 
                 messages.push({
-                    command: error > maxError ? 'fail' : 'pass',
-                    text: error > maxError ?
-                        `total error was ${error.toFixed(1)}, exceeding maximum allowed (${maxError})` :
-                        `error did not exceed ${maxError}`,
+                    command: actualErrorValue > expectedErrorValue ? 'fail' : 'pass',
+                    text: failed ?
+                        `total error was ${actualErrorString}, exceeding maximum allowed (${expectedErrorString})` :
+                        `error did not exceed ${expectedErrorString}`,
                     error,
                     diffImage
                 });
