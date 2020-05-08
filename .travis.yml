@@ -4,11 +4,13 @@ node_js:
 - 10
 - node
 env:
-  - NODE_ENV=production
+  - NODE_ENV=development
 install:
 - npm --production=false install
 - npm --production=false update
 sudo: false
+cache:
+  npm: false
 jobs:
   include:
     - stage: test
