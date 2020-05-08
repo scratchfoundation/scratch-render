@@ -4,7 +4,7 @@ node_js:
 - 10
 - node
 env:
-  - NODE_ENV=development
+  - NODE_ENV=production
 install:
 - npm --production=false install
 - npm --production=false update
