@@ -9,8 +9,6 @@ install:
 - npm --production=false install
 - npm --production=false update
 sudo: false
-cache:
-  npm: false
 jobs:
   include:
     - stage: test
