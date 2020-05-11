@@ -9,6 +9,10 @@ install:
 - npm --production=false install
 - npm --production=false update
 sudo: false
+cache:
+  directories:
+    - node_modules
+    - ~/.cache/ms-playwright
 jobs:
   include:
     - stage: test
