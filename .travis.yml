@@ -12,6 +12,7 @@ sudo: false
 cache:
   directories:
     - ~/.cache/ms-playwright
+  npm: false
 jobs:
   include:
     - stage: test
