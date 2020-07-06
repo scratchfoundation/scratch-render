@@ -1888,6 +1888,10 @@ class RenderWebGL extends EventEmitter {
         // *Not* Scratch Space-- +y is bottom
         // Loop over all rows of pixels, starting at the top
         for (let y = 0; y < height; y++) {
+            // See comment in Drawable.getLocalPosition for why we're adding 0.5 here.
+            // Essentially, _pixelPos is supposed to be in "texture space", and "texture space" positions are offset
+            // by 0.5. Notice that we're calling drawable.skin.isTouchingLinear (operates in texture space)
+            // and not drawable.isTouching (operates in Scratch space).
             _pixelPos[1] = (y + 0.5) / height;
 
             // We start at the leftmost point, then go rightwards until we hit an opaque pixel
