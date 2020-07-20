@@ -299,8 +299,7 @@ class SVGSkin extends Skin {
         // TODO: return a Promise so that the VM can read the skin's `size` after the image is loaded.
         this._nativeSize[0] = width;
         this._nativeSize[1] = height;
-
-        if (typeof rotationCenter === 'undefined') rotationCenter = this.calculateRotationCenter();
+        if (typeof rotationCenter === 'undefined') rotationCenter = this._calculateRotationCenter();
         this._nativeRotationCenter[0] = rotationCenter[0];
         this._nativeRotationCenter[1] = rotationCenter[1];
 

@@ -90,7 +90,7 @@ class BitmapSkin extends Skin {
         this._costumeResolution = costumeResolution || 2;
         this._textureSize = BitmapSkin._getBitmapSize(bitmapData);
 
-        if (typeof rotationCenter === 'undefined') rotationCenter = this.calculateRotationCenter();
+        if (typeof rotationCenter === 'undefined') rotationCenter = this._calculateRotationCenter();
         this._nativeRotationCenter[0] = rotationCenter[0];
         this._nativeRotationCenter[1] = rotationCenter[1];
 

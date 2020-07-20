@@ -761,7 +761,7 @@ class RenderWebGL extends EventEmitter {
      */
     getSkinRotationCenter (skinID) {
         const skin = this._allSkins[skinID];
-        return skin.calculateRotationCenter();
+        return skin.nativeRotationCenter;
     }
 
     /**
