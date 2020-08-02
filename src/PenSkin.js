@@ -44,6 +44,11 @@ const __projectionMatrix = twgl.m4.identity();
  */
 const __modelTranslationMatrix = twgl.m4.identity();
 
+/**
+ * Reused memory location for rotation matrix for building a model matrix.
+ * @type {FloatArray}
+ */
+const __modelRotationMatrix = twgl.m4.identity();
 
 /**
  * Reused memory location for scaling matrix for building a model matrix.
@@ -216,15 +221,10 @@ class PenSkin extends Skin {
      * @param {number} y1 - the Y coordinate of the end of the line.
      */
     drawLine (penAttributes, x0, y0, x1, y1) {
-        // For compatibility with Scratch 2.0, offset pen lines of width 1 and 3 so they're pixel-aligned.
-        // See https://github.com/LLK/scratch-render/pull/314
-        const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
-        const offset = (diameter === 1 || diameter === 3) ? 0.5 : 0;
-
         this._drawLineOnBuffer(
             penAttributes,
-            x0 + offset, y0 + offset,
-            x1 + offset, y1 + offset
+            this._rotationCenter[0] + x0, this._rotationCenter[1] - y0,
+            this._rotationCenter[0] + x1, this._rotationCenter[1] - y1
         );
 
         this._silhouetteDirty = true;
@@ -234,16 +234,72 @@ class PenSkin extends Skin {
      * Create 2D geometry for drawing lines to a framebuffer.
      */
     _createLineGeometry () {
+        // Create a set of triangulated quads that break up a line into 3 parts:
+        // 2 caps and a body. The y component of these position vertices are
+        // divided to bring a value of 1 down to 0.5 to 0. The large y values
+        // are set so they will still be at least 0.5 after division. The
+        // divisor is scaled based on the length of the line and the lines
+        // width.
+        //
+        // Texture coordinates are based on a "generated" texture whose general
+        // shape is a circle. The line caps set their texture values to define
+        // there roundedness with the texture. The body has all of its texture
+        // values set to the center of the texture so it's a solid block.
         const quads = {
             a_position: {
                 numComponents: 2,
                 data: [
+                    -0.5, 1,
+                    0.5, 1,
+                    -0.5, 100000,
+
+                    -0.5, 100000,
+                    0.5, 1,
+                    0.5, 100000,
+
+                    -0.5, 1,
+                    0.5, 1,
+                    -0.5, -1,
+
+                    -0.5, -1,
+                    0.5, 1,
+                    0.5, -1,
+
+                    -0.5, -100000,
+                    0.5, -100000,
+                    -0.5, -1,
+
+                    -0.5, -1,
+                    0.5, -100000,
+                    0.5, -1
+                ]
+            },
+            a_texCoord: {
+                numComponents: 2,
+                data: [
+                    1, 0.5,
+                    0, 0.5,
+                    1, 0,
+
+                    1, 0,
+                    0, 0.5,
+                    0, 0,
+
+                    0.5, 0,
+                    0.5, 1,
+                    0.5, 0,
+
+                    0.5, 0,
+                    0.5, 1,
+                    0.5, 1,
+
                     1, 0,
                     0, 0,
-                    1, 1,
-                    1, 1,
+                    1, 0.5,
+
+                    1, 0.5,
                     0, 0,
-                    0, 1
+                    0, 0.5
                 ]
             }
         };
@@ -303,6 +359,26 @@ class PenSkin extends Skin {
 
         this._renderer.enterDrawRegion(this._lineOnBufferDrawRegionId);
 
+        const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
+        const length = Math.hypot(Math.abs(x1 - x0) - 0.001, Math.abs(y1 - y0) - 0.001);
+        const avgX = (x0 + x1) / 2;
+        const avgY = (y0 + y1) / 2;
+        const theta = Math.atan2(y0 - y1, x0 - x1);
+        const alias = 1;
+
+        // The line needs a bit of aliasing to look smooth. Add a small offset
+        // and a small size boost to scaling to give a section to alias.
+        const translationVector = __modelTranslationVector;
+        translationVector[0] = avgX - (alias / 2);
+        translationVector[1] = avgY + (alias / 4);
+
+        const scalingVector = __modelScalingVector;
+        scalingVector[0] = diameter + alias;
+        scalingVector[1] = length + diameter - (alias / 2);
+
+        const radius = diameter / 2;
+        const yScalar = (0.50001 - (radius / (length + diameter)));
+
         // Premultiply pen color by pen transparency
         const penColor = penAttributes.color4f || DefaultPenAttributes.color4f;
         __premultipliedColor[0] = penColor[0] * penColor[3];
@@ -310,21 +386,20 @@ class PenSkin extends Skin {
         __premultipliedColor[2] = penColor[2] * penColor[3];
         __premultipliedColor[3] = penColor[3];
 
-        // Fun fact: Doing this calculation in the shader has the potential to overflow the floating-point range.
-        // 'mediump' precision is only required to have a range up to 2^14 (16384), so any lines longer than 2^7 (128)
-        // can overflow that, because you're squaring the operands, and they could end up as "infinity".
-        // Even GLSL's `length` function won't save us here:
-        // https://asawicki.info/news_1596_watch_out_for_reduced_precision_normalizelength_in_opengl_es
-        const lineDiffX = x1 - x0;
-        const lineDiffY = y1 - y0;
-        const lineLength = Math.sqrt((lineDiffX * lineDiffX) + (lineDiffY * lineDiffY));
-
         const uniforms = {
-            u_lineColor: __premultipliedColor,
-            u_lineThickness: penAttributes.diameter || DefaultPenAttributes.diameter,
-            u_lineLength: lineLength,
-            u_penPoints: [x0, -y0, lineDiffX, -lineDiffY],
-            u_stageSize: this.size
+            u_positionScalar: yScalar,
+            u_capScale: diameter,
+            u_aliasAmount: alias,
+            u_modelMatrix: twgl.m4.multiply(
+                twgl.m4.multiply(
+                    twgl.m4.translation(translationVector, __modelTranslationMatrix),
+                    twgl.m4.rotationZ(theta - (Math.PI / 2), __modelRotationMatrix),
+                    __modelMatrix
+                ),
+                twgl.m4.scaling(scalingVector, __modelScalingMatrix),
+                __modelMatrix
+            ),
+            u_lineColor: __premultipliedColor
         };
 
         twgl.setUniforms(currentShader, uniforms);
