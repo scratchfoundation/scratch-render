@@ -31,7 +31,7 @@
     "babel-preset-env": "^1.6.1",
     "copy-webpack-plugin": "^4.5.1",
     "docdash": "^0.4.0",
-    "eslint": "^4.6.1",
+    "eslint": "^7.11.0",
     "eslint-config-scratch": "^5.0.0",
     "gh-pages": "^1.0.0",
     "jsdoc": "^3.6.0",
