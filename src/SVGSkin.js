@@ -148,7 +148,7 @@ class SVGSkin extends Skin {
             const svgSize = this._svgRenderer.size;
             if (svgSize[0] === 0 || svgSize[1] === 0) {
                 super.setEmptyImageData();
-                return;
+                return onSkinReady && onSkinReady();
             }
 
             const maxDimension = Math.ceil(Math.max(this.size[0], this.size[1]));
