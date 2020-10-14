@@ -350,12 +350,13 @@ class RenderWebGL extends EventEmitter {
      * @param {!string} svgData - new SVG to use.
      * @param {?Array<number>} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the
      * skin will be used
+     * @param {function} [onSkinReady] - Optional: if present, will be called after the skin loads
      * @returns {!int} the ID for the new skin.
      */
-    createSVGSkin (svgData, rotationCenter) {
+    createSVGSkin (svgData, rotationCenter, onSkinReady) {
         const skinId = this._nextSkinId++;
         const newSkin = new SVGSkin(skinId, this);
-        newSkin.setSVG(svgData, rotationCenter);
+        newSkin.setSVG(svgData, rotationCenter, onSkinReady);
         this._allSkins[skinId] = newSkin;
         return skinId;
     }
@@ -393,6 +394,7 @@ class RenderWebGL extends EventEmitter {
      * @param {!string} svgData - new SVG to use.
      * @param {?Array<number>} rotationCenter Optional: rotation center of the skin. If not supplied, the center of the
      * skin will be used
+     * @returns {Promise} - a promise which resolves after the skin has updated
      */
     updateSVGSkin (skinId, svgData, rotationCenter) {
         if (this._allSkins[skinId] instanceof SVGSkin) {
@@ -401,8 +403,9 @@ class RenderWebGL extends EventEmitter {
         }
 
         const newSkin = new SVGSkin(skinId, this);
-        newSkin.setSVG(svgData, rotationCenter);
-        this._reskin(skinId, newSkin);
+        return newSkin.setSVG(svgData, rotationCenter).then(() => {
+            this._reskin(skinId, newSkin);
+        });
     }
 
     /**

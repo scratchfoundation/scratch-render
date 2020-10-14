@@ -140,9 +140,11 @@ class SVGSkin extends Skin {
      * Set the contents of this skin to a snapshot of the provided SVG data.
      * @param {string} svgData - new SVG to use.
      * @param {Array<number>} [rotationCenter] - Optional rotation center for the SVG.
+     * @param {function} [onSkinReady] - Optional: if present, will be called after the skin loads
+     * @returns {Promise} - a promise which resolves after the SVG is loaded and ready
      */
-    setSVG (svgData, rotationCenter) {
-        this._svgRenderer.loadSVG(svgData, false, () => {
+    setSVG (svgData, rotationCenter, onSkinReady) {
+        return this._svgRenderer.loadSVG(svgData, false, () => {
             const svgSize = this._svgRenderer.size;
             if (svgSize[0] === 0 || svgSize[1] === 0) {
                 super.setEmptyImageData();
@@ -163,6 +165,9 @@ class SVGSkin extends Skin {
             this._rotationCenter[1] = rotationCenter[1] - viewOffset[1];
 
             this.emit(Skin.Events.WasAltered);
+            if (onSkinReady) {
+                onSkinReady();
+            }
         });
     }
 
