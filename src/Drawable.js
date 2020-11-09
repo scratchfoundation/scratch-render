@@ -504,6 +504,38 @@ class Drawable {
     }
 
     /**
+     * Initialize a bounding rectangle with a set of convex hull points, taking into account that the points refer to
+     * pixel centers and not pixel edges.
+     * @param {Rectangle} rect The bounding rectangle to initialize
+     * @param {Array<Array.number>} points The convex hull points
+     */
+    _initRectangleFromConvexHullPoints (rect, points) {
+        rect.left = Infinity;
+        rect.right = -Infinity;
+        rect.top = -Infinity;
+        rect.bottom = Infinity;
+
+        // Each convex hull point is the center of a pixel. However, said pixels each have area. We must take into
+        // account the size of the pixels when calculating the bounds. The pixel dimensions depend on the scale and
+        // rotation (as we're treating pixels as squares, which change dimensions when rotated).
+
+        // The "Scratch-space" size of one texture pixel at the drawable's current size.
+        const pixelScale = (this.scale[0] / 100) * (this.skin.size[0] / this.skin._silhouette._width);
+        // Half the size of a rotated pixel, if we assume pixels are shaped like squares.
+        // At 0 degrees of rotation, this will be 0.5. At 45 degrees, it'll be 0.707 (half the square root of 2), etc.
+        const halfPixel = (Math.abs(this._rotationMatrix[0]) + Math.abs(this._rotationMatrix[1])) * 0.5 * pixelScale;
+
+        for (let i = 0; i < points.length; i++) {
+            const x = points[i][0];
+            const y = points[i][1];
+            if ((x - halfPixel) < rect.left) rect.left = x - halfPixel;
+            if ((x + halfPixel) > rect.right) rect.right = x + halfPixel;
+            if ((y + halfPixel) > rect.top) rect.top = y + halfPixel;
+            if ((y - halfPixel) < rect.bottom) rect.bottom = y - halfPixel;
+        }
+    }
+
+    /**
      * Get the precise bounds for a Drawable.
      * This function applies the transform matrix to the known convex hull,
      * and then finds the minimum box along the axes.
@@ -521,7 +553,7 @@ class Drawable {
         const transformedHullPoints = this._getTransformedHullPoints();
         // Search through transformed points to generate box on axes.
         result = result || new Rectangle();
-        result.initFromPointsAABB(transformedHullPoints);
+        this._initRectangleFromConvexHullPoints(result, transformedHullPoints);
         return result;
     }
 
@@ -545,7 +577,7 @@ class Drawable {
         const filteredHullPoints = transformedHullPoints.filter(p => p[1] > maxY - slice);
         // Search through filtered points to generate box on axes.
         result = result || new Rectangle();
-        result.initFromPointsAABB(filteredHullPoints);
+        this._initRectangleFromConvexHullPoints(result, filteredHullPoints);
         return result;
     }
 
