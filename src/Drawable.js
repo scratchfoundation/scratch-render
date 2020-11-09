@@ -123,6 +123,7 @@ class Drawable {
         this._transformedHullDirty = true;
 
         this._skinWasAltered = this._skinWasAltered.bind(this);
+        this._silhouetteWasUpdated = this._silhouetteWasUpdated.bind(this);
 
         this.isTouching = this._isTouchingNever;
     }
@@ -166,10 +167,12 @@ class Drawable {
         if (this._skin !== newSkin) {
             if (this._skin) {
                 this._skin.removeListener(Skin.Events.WasAltered, this._skinWasAltered);
+                this._skin.removeListener(Skin.Events.SilhouetteUpdated, this._silhouetteWasUpdated);
             }
             this._skin = newSkin;
             if (this._skin) {
                 this._skin.addListener(Skin.Events.WasAltered, this._skinWasAltered);
+                this._skin.addListener(Skin.Events.SilhouetteUpdated, this._silhouetteWasUpdated);
             }
             this._skinWasAltered();
         }
@@ -694,6 +697,14 @@ class Drawable {
         this._skinScaleDirty = true;
         this.setConvexHullDirty();
         this.setTransformDirty();
+    }
+
+    /**
+     * Respond to an internal change in the current Skin's silhouette.
+     * @private
+     */
+    _silhouetteWasUpdated () {
+        this.setConvexHullDirty();
     }
 
     /**
