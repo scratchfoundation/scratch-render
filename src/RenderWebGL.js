@@ -1861,13 +1861,15 @@ class RenderWebGL extends EventEmitter {
     _getConvexHullPointsForDrawable (drawableID) {
         const drawable = this._allDrawables[drawableID];
 
-        const [width, height] = drawable.skin.size;
+        drawable.updateCPURenderAttributes();
+
+        const silhouette = drawable.skin._silhouette;
+        const width = silhouette._width;
+        const height = silhouette._height;
         // No points in the hull if invisible or size is 0.
         if (!drawable.getVisible() || width === 0 || height === 0) {
             return [];
         }
-
-        drawable.updateCPURenderAttributes();
 
         /**
          * Return the determinant of two vectors, the vector from A to B and the vector from A to C.
@@ -1921,8 +1923,8 @@ class RenderWebGL extends EventEmitter {
             for (; x < width; x++) {
                 _pixelPos[0] = (x + 0.5) / width;
                 EffectTransform.transformPoint(drawable, _pixelPos, _effectPos);
-                if (drawable.skin.isTouchingLinear(_effectPos)) {
-                    currentPoint = [x, y];
+                if (drawable.skin.isTouchingNearest(_effectPos)) {
+                    currentPoint = [_pixelPos[0], _pixelPos[1]];
                     break;
                 }
             }
@@ -1958,8 +1960,8 @@ class RenderWebGL extends EventEmitter {
             for (x = width - 1; x >= 0; x--) {
                 _pixelPos[0] = (x + 0.5) / width;
                 EffectTransform.transformPoint(drawable, _pixelPos, _effectPos);
-                if (drawable.skin.isTouchingLinear(_effectPos)) {
-                    currentPoint = [x, y];
+                if (drawable.skin.isTouchingNearest(_effectPos)) {
+                    currentPoint = [_pixelPos[0], _pixelPos[1]];
                     break;
                 }
             }
