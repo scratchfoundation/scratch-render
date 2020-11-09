@@ -695,21 +695,43 @@ class RenderWebGL extends EventEmitter {
             drawable.setConvexHullPoints(points);
         }
         const bounds = drawable.getFastBounds();
-        // In debug mode, draw the bounds.
+        // In debug mode, draw the bounds and convex hull.
         if (this._debugCanvas) {
             const gl = this._gl;
             this._debugCanvas.width = gl.canvas.width;
             this._debugCanvas.height = gl.canvas.height;
             const context = this._debugCanvas.getContext('2d');
             context.drawImage(gl.canvas, 0, 0);
-            context.strokeStyle = '#FF0000';
+
+            // Prepare the coordinate space.
+            context.save();
             const pr = window.devicePixelRatio;
+            context.translate(pr * this._nativeSize[0] / 2, pr * this._nativeSize[1] / 2);
+            context.scale(pr, pr * -1);
+
+            // Draw the bounds.
+            context.strokeStyle = 'red';
             context.strokeRect(
-                pr * (bounds.left + (this._nativeSize[0] / 2)),
-                pr * (-bounds.top + (this._nativeSize[1] / 2)),
-                pr * (bounds.right - bounds.left),
-                pr * (-bounds.bottom + bounds.top)
+                bounds.left,
+                bounds.top,
+                bounds.right - bounds.left,
+                bounds.bottom - bounds.top
             );
+
+            // Draw the convex hull.
+            context.beginPath();
+            const points = drawable._getTransformedHullPoints();
+            if (points.length > 0) {
+                context.moveTo(points[0][0], points[0][1]);
+                for (let i = 0; i < points.length; i++) {
+                    const point = points[(i + 1) % points.length];
+                    context.lineTo(point[0], point[1]);
+                }
+                context.lineWidth = 1;
+                context.strokeStyle = 'blue';
+                context.stroke();
+            }
+            context.restore();
         }
         return bounds;
     }
