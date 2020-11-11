@@ -66,21 +66,15 @@ class SVGSkin extends Skin {
     createMIP (scale) {
         this._svgRenderer.draw(scale);
 
-        // Pull out the ImageData from the canvas. ImageData speeds up
-        // updating Silhouette and is better handled by more browsers in
-        // regards to memory.
         const canvas = this._svgRenderer.canvas;
         // If one of the canvas dimensions is 0, set this MIP to an empty image texture.
         // This avoids an IndexSizeError from attempting to getImageData when one of the dimensions is 0.
         if (canvas.width === 0 || canvas.height === 0) return super.getTexture();
 
-        const context = canvas.getContext('2d');
-        const textureData = context.getImageData(0, 0, canvas.width, canvas.height);
-
         const textureOptions = {
             auto: false,
             wrap: this._renderer.gl.CLAMP_TO_EDGE,
-            src: textureData,
+            src: canvas,
             premultiplyAlpha: true
         };
 
@@ -88,7 +82,7 @@ class SVGSkin extends Skin {
 
         // Check if this is the largest MIP created so far. Currently, silhouettes only get scaled up.
         if (this._largestMIPScale < scale) {
-            this._silhouette.update(textureData);
+            this._silhouette.update(canvas);
             this._largestMIPScale = scale;
         }
 
