@@ -181,7 +181,9 @@ ShaderManager.DRAW_MODE = {
     /**
      * Draw the background in a certain color. Must sometimes be used instead of gl.clear.
      */
-    background: 'background'
+    background: 'background',
+
+    mystery: 'mystery'
 };
 
 module.exports = ShaderManager;

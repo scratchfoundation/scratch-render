@@ -139,6 +139,13 @@ class RenderWebGL extends EventEmitter {
             throw new Error('Could not get WebGL context: this browser or environment may not support WebGL.');
         }
 
+        this._mystery = {
+            modeActive: false,
+            mouseMoveListener: null,
+            bufferInfo: null,
+            mouseCoords: [0, 0]
+        };
+
         /** @type {RenderWebGL.UseGpuModes} */
         this._useGpuMode = RenderWebGL.UseGpuModes.Automatic;
 
@@ -242,6 +249,7 @@ class RenderWebGL extends EventEmitter {
     resize (pixelsWide, pixelsTall) {
         const {canvas} = this._gl;
         const pixelRatio = window.devicePixelRatio || 1;
+
         const newWidth = pixelsWide * pixelRatio;
         const newHeight = pixelsTall * pixelRatio;
 
@@ -250,10 +258,16 @@ class RenderWebGL extends EventEmitter {
         if (canvas.width !== newWidth || canvas.height !== newHeight) {
             canvas.width = newWidth;
             canvas.height = newHeight;
+
+            if (this._mystery.modeActive && this._mystery.bufferInfo) {
+                twgl.resizeFramebufferInfo(this._gl, this._mystery.bufferInfo, [
+                    {format: this._gl.RGBA}
+                ], pixelsWide * pixelRatio, pixelsTall * pixelRatio);
+            }
+
             // Resizing the canvas causes it to be cleared, so redraw it.
             this.draw();
         }
-
     }
 
     /**
@@ -653,7 +667,43 @@ class RenderWebGL extends EventEmitter {
         gl.clearColor(...this._backgroundColor4f);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        this._drawThese(this._drawList, ShaderManager.DRAW_MODE.default, this._projection);
+        let drawList = this._drawList;
+        if (this._mystery.modeActive) {
+            drawList = drawList.slice(1);
+            twgl.bindFramebufferInfo(gl, this._mystery.bufferInfo);
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        this._drawThese(drawList, ShaderManager.DRAW_MODE.default, this._projection);
+
+        if (this._mystery.modeActive) {
+            // draw all layers except for the bottom layer onto the mystery buffer
+            twgl.bindFramebufferInfo(gl, null);
+            gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+            this._drawThese([this._drawList[0]], ShaderManager.DRAW_MODE.default, this._projection);
+
+            this._doExitDrawRegion();
+            const newShader = this._shaderManager.getShader(ShaderManager.DRAW_MODE.mystery, 0);
+            this._regionId = newShader;
+
+            // draw mystery buffer to main buffer
+            gl.useProgram(newShader.program);
+            twgl.setBuffersAndAttributes(gl, newShader, this._bufferInfo);
+            const uniforms = {
+                u_projectionMatrix: this._projection,
+                u_modelMatrix: twgl.m4.identity(),
+                u_skin: this._mystery.bufferInfo.attachments[0],
+                u_mousePosition: this._mystery.mouseCoords
+            };
+
+            twgl.setTextureParameters(
+                gl, uniforms.u_skin, {minMag: gl.LINEAR}
+            );
+
+            twgl.setUniforms(newShader, uniforms);
+            twgl.drawBufferInfo(gl, this._bufferInfo, gl.TRIANGLES);
+        }
+
         if (this._snapshotCallbacks.length > 0) {
             const snapshot = gl.canvas.toDataURL();
             this._snapshotCallbacks.forEach(cb => cb(snapshot));
@@ -2081,6 +2131,32 @@ class RenderWebGL extends EventEmitter {
         dst[1] += blendAlpha * 255;
         dst[2] += blendAlpha * 255;
         return dst;
+    }
+
+    setMysteryMode (enableMysteryMode) {
+        this._mystery.modeActive = enableMysteryMode;
+
+        if (enableMysteryMode) {
+            this._mystery.bufferInfo = twgl.createFramebufferInfo(
+                this._gl,
+                [{format: this._gl.RGBA}],
+                this._gl.drawingBufferWidth,
+                this._gl.drawingBufferHeight
+            );
+
+            this._mystery.mouseMoveListener = event => {
+                const rect = this.canvas.getBoundingClientRect();
+                this._mystery.mouseCoords[0] = (event.clientX - rect.left) / rect.width;
+                this._mystery.mouseCoords[1] = (event.clientY - rect.top) / rect.height;
+            };
+
+            document.addEventListener('mousemove', this._mystery.mouseMoveListener);
+        } else {
+            if (this._mystery.bufferInfo) {
+                this._gl.deleteFramebuffer(this._mystery.bufferInfo.framebuffer);
+            }
+            document.removeEventListener('mousemove', this._mystery.mouseMoveListener);
+        }
     }
 
     /**
