@@ -53,8 +53,11 @@ class Skin extends EventEmitter {
             u_skinSize: [0, 0],
 
             /**
-             * The "logical bounds" of this skin as opposed to its "texture bounds".
-             * These range from 0 to 1 to represent "all the way to the top/left" to "all the way to the bottom/right".
+             * The "native" bounds of this skin that will be used by distortion effects, as fractions of its
+             * "quadrilateral" bounds. This is important for ensuring that distortion effects appear consistent no
+             * matter how much "slack space" we add to our quadSize.
+             * These range from 0 to 1 to represent "all the way to the top/left of the quadrilateral bounds" to
+             * "all the way to the bottom/right of the quadrilateral bounds".
              * X and Y components are top left corner, Z and W components are bottom right.
              * @type {Array<number>}
              */

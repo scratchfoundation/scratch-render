@@ -240,6 +240,7 @@ class SVGSkin extends Skin {
         ];
 
         // Set "logical bounds" as fractions of the adjusted bounding box size
+        /** @see Skin.logicalBounds */
         this._uniforms.u_logicalBounds[0] = xOffset / adjustedSize[0];
         this._uniforms.u_logicalBounds[1] = yOffset / adjustedSize[1];
         this._uniforms.u_logicalBounds[2] = (width + xOffset) / adjustedSize[0];
