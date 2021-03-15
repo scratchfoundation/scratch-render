@@ -220,6 +220,19 @@ class Skin extends EventEmitter {
     }
 
     /**
+     * Is this (texture-space, in the range [0, 1]) point inside the skin's "logical bounds"?
+     * @param {twgl.v3} vec A texture coordinate.
+     * @return {boolean} True if the point is inside the skin's "logical bounds"
+     */
+    pointInsideLogicalBounds (vec) {
+        const logicalBounds = this._uniforms.u_logicalBounds;
+        return vec[0] >= logicalBounds[0] &&
+            vec[0] <= logicalBounds[2] &&
+            vec[1] >= logicalBounds[1] &&
+            vec[1] <= logicalBounds[3];
+    }
+
+    /**
      * Does this point touch an opaque or translucent point on this skin?
      * Nearest Neighbor version
      * The caller is responsible for ensuring this skin's silhouette is up-to-date.

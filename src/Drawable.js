@@ -43,14 +43,6 @@ const getLocalPosition = (drawable, vec) => {
     // TODO: Check if this can be removed after render pull 479 is merged
     if (Math.abs(localPosition[0]) < FLOATING_POINT_ERROR_ALLOWANCE) localPosition[0] = 0;
     if (Math.abs(localPosition[1]) < FLOATING_POINT_ERROR_ALLOWANCE) localPosition[1] = 0;
-    // Apply texture effect transform if the localPosition is within the drawable's space,
-    // and any effects are currently active.
-    if (drawable.enabledEffects !== 0 &&
-        (localPosition[0] >= 0 && localPosition[0] < 1) &&
-        (localPosition[1] >= 0 && localPosition[1] < 1)) {
-
-        EffectTransform.transformPoint(drawable, localPosition, localPosition);
-    }
     return localPosition;
 };
 
@@ -501,11 +493,17 @@ class Drawable {
     }
 
     _isTouchingNearest (vec) {
-        return this.skin.isTouchingNearest(getLocalPosition(this, vec));
+        const localPosition = getLocalPosition(this, vec);
+        if (!this.skin.pointInsideLogicalBounds(localPosition)) return false;
+        if (this.enabledEffects !== 0) EffectTransform.transformPoint(this, localPosition, localPosition);
+        return this.skin._silhouette.isTouchingNearest(localPosition);
     }
 
     _isTouchingLinear (vec) {
-        return this.skin.isTouchingLinear(getLocalPosition(this, vec));
+        const localPosition = getLocalPosition(this, vec);
+        if (!this.skin.pointInsideLogicalBounds(localPosition)) return false;
+        if (this.enabledEffects !== 0) EffectTransform.transformPoint(this, localPosition, localPosition);
+        return this.skin._silhouette.isTouchingLinear(localPosition);
     }
 
     /**
@@ -769,14 +767,16 @@ class Drawable {
      */
     static sampleColor4b (vec, drawable, dst, effectMask) {
         const localPosition = getLocalPosition(drawable, vec);
-        if (localPosition[0] < 0 || localPosition[1] < 0 ||
-            localPosition[0] > 1 || localPosition[1] > 1) {
+        if (!drawable.skin.pointInsideLogicalBounds(localPosition)) {
             dst[0] = 0;
             dst[1] = 0;
             dst[2] = 0;
             dst[3] = 0;
             return dst;
         }
+
+        // Apply texture effect transform if any effects are currently active.
+        if (drawable.enabledEffects !== 0) EffectTransform.transformPoint(drawable, localPosition, localPosition);
 
         const textColor =
         // commenting out to only use nearest for now
