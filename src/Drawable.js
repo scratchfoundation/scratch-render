@@ -494,16 +494,16 @@ class Drawable {
 
     _isTouchingNearest (vec) {
         const localPosition = getLocalPosition(this, vec);
-        if (!this.skin.pointInsideLogicalBounds(localPosition)) return false;
+        if (!this._skin.pointInsideLogicalBounds(localPosition)) return false;
         if (this.enabledEffects !== 0) EffectTransform.transformPoint(this, localPosition, localPosition);
-        return this.skin._silhouette.isTouchingNearest(localPosition);
+        return this._skin._silhouette.isTouchingNearest(localPosition);
     }
 
     _isTouchingLinear (vec) {
         const localPosition = getLocalPosition(this, vec);
-        if (!this.skin.pointInsideLogicalBounds(localPosition)) return false;
+        if (!this._skin.pointInsideLogicalBounds(localPosition)) return false;
         if (this.enabledEffects !== 0) EffectTransform.transformPoint(this, localPosition, localPosition);
-        return this.skin._silhouette.isTouchingLinear(localPosition);
+        return this._skin._silhouette.isTouchingLinear(localPosition);
     }
 
     /**
@@ -767,7 +767,7 @@ class Drawable {
      */
     static sampleColor4b (vec, drawable, dst, effectMask) {
         const localPosition = getLocalPosition(drawable, vec);
-        if (!drawable.skin.pointInsideLogicalBounds(localPosition)) {
+        if (!drawable._skin.pointInsideLogicalBounds(localPosition)) {
             dst[0] = 0;
             dst[1] = 0;
             dst[2] = 0;
@@ -780,9 +780,9 @@ class Drawable {
 
         const textColor =
         // commenting out to only use nearest for now
-        // drawable.skin.useNearest(drawable._scale, drawable) ?
-             drawable.skin._silhouette.colorAtNearest(localPosition, dst);
-        // : drawable.skin._silhouette.colorAtLinear(localPosition, dst);
+        // drawable._skin.useNearest(drawable._scale, drawable) ?
+             drawable._skin._silhouette.colorAtNearest(localPosition, dst);
+        // : drawable._skin._silhouette.colorAtLinear(localPosition, dst);
 
         if (drawable.enabledEffects === 0) return textColor;
         return EffectTransform.transformColor(drawable, textColor, effectMask);
