@@ -61,9 +61,6 @@ class TextBubbleSkin extends Skin {
         this._pointsLeft = false;
 
         /** @type {boolean} */
-        this._textDirty = true;
-
-        /** @type {boolean} */
         this._textureDirty = true;
 
         this.measurementProvider = new CanvasMeasurementProvider(this._canvas.getContext('2d'));
@@ -88,9 +85,6 @@ class TextBubbleSkin extends Skin {
      * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
      */
     get nativeSize () {
-        if (this._textDirty) {
-            this._reflowLines();
-        }
         return this._size;
     }
 
@@ -105,7 +99,7 @@ class TextBubbleSkin extends Skin {
         this._bubbleType = type;
         this._pointsLeft = pointsLeft;
 
-        this._textDirty = true;
+        this._reflowLines();
         this._textureDirty = true;
         this.emit(Skin.Events.WasAltered);
     }
@@ -138,8 +132,6 @@ class TextBubbleSkin extends Skin {
 
         this._size[0] = paddedWidth + BubbleStyle.STROKE_WIDTH;
         this._size[1] = paddedHeight + BubbleStyle.STROKE_WIDTH + BubbleStyle.TAIL_HEIGHT;
-
-        this._textDirty = false;
     }
 
     /**
@@ -148,10 +140,6 @@ class TextBubbleSkin extends Skin {
      */
     _renderTextBubble (scale) {
         const ctx = this._canvas.getContext('2d');
-
-        if (this._textDirty) {
-            this._reflowLines();
-        }
 
         // Calculate the canvas-space sizes of the padded text area and full text bubble
         const paddedWidth = this._textAreaSize.width;
