@@ -129,16 +129,6 @@ class SVGSkin extends Skin {
         const [width, height] = this._quadSize;
         this._canvas.width = width * scale;
         this._canvas.height = height * scale;
-        if (
-            this._canvas.width <= 0 ||
-            this._canvas.height <= 0 ||
-            // Even if the canvas at the current scale has a nonzero size, the image's dimensions are floored
-            // pre-scaling; e.g. if an image has a width of 0.4 and is being rendered at 3x scale, the canvas will have
-            // a width of 1, but the image's width will be rounded down to 0 on some browsers (Firefox) prior to being
-            // drawn at that scale, resulting in an IndexSizeError if we attempt to draw it.
-            this._svgImage.naturalWidth <= 0 ||
-            this._svgImage.naturalHeight <= 0
-        ) return super.getTexture();
         this._context.clearRect(0, 0, this._canvas.width, this._canvas.height);
         this._context.setTransform(scale, 0, 0, scale, 0, 0);
         this._context.drawImage(this._svgImage, 0, 0);
