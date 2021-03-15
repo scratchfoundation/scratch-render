@@ -16,6 +16,10 @@ uniform vec3 u_colorMask;
 uniform float u_colorMaskTolerance;
 #endif // DRAW_MODE_colorMask
 
+#if defined(ENABLE_fisheye) || defined(ENABLE_whirl) || defined(ENABLE_pixelate) || defined(ENABLE_mosaic)
+#define DISTORTION_EFFECTS_ENABLED
+#endif
+
 #ifdef ENABLE_fisheye
 uniform float u_fisheye;
 #endif // ENABLE_fisheye
@@ -45,10 +49,12 @@ uniform vec4 u_backgroundColor;
 #endif // DRAW_MODE_background
 
 #if !(defined(DRAW_MODE_line) || defined(DRAW_MODE_background))
-// TODO: conditionally compile this only if distortion effects are enabled.
-// Ask Chris if you can use macros in ifdefs so I can define a DISTORTION_EFFECTS_ENABLED macro and use that.
+
+#ifdef DISTORTION_EFFECTS_ENABLED
 uniform vec4 u_logicalBounds;
-varying vec2 v_logicalCoord;
+#endif
+
+varying vec2 v_texCoord;
 #endif
 
 uniform sampler2D u_skin;
@@ -120,10 +126,7 @@ const vec2 kCenter = vec2(0.5, 0.5);
 void main()
 {
 	#if !(defined(DRAW_MODE_line) || defined(DRAW_MODE_background))
-	// To properly render subpixel-positioned SVG viewboxes, there's some "slack space" around the edges of the texture.
-	// The "logical coordinates" exclude this slack space, starting at the top left of the SVG's *content* and ending
-	// at the bottom right. Distortion effects are applied in this space so as to ensure their "center" is correct.
-	vec2 texcoord0 = v_logicalCoord;
+	vec2 texcoord0 = v_texCoord;
 
 	#ifdef ENABLE_mosaic
 	texcoord0 = fract(u_mosaic * texcoord0);
@@ -166,18 +169,22 @@ void main()
 	}
 	#endif // ENABLE_fisheye
 
-	// After doing all distortions in "logical texture space", convert back to actual texture space
+	#ifdef DISTORTION_EFFECTS_ENABLED
+	// If distortion effects are enabled, the vertex shader will convert texture coordinates to "logical bounds" space.
+	// (0, 0) will be the top left corner of the "logical bounds" and (1, 1) will be the bottom right corner.
+	// If so, convert back to actual texture space only after doing all distortions in "logical texture space".
 	texcoord0 = (texcoord0 * (u_logicalBounds.zw - u_logicalBounds.xy)) + u_logicalBounds.xy;
+	#endif
 
 	gl_FragColor = texture2D(u_skin, texcoord0);
 
 	#if defined(ENABLE_pixelate) || defined(ENABLE_mosaic)
 	// Ensure that the pixels don't extend outside the "logical bounds"
 	gl_FragColor *= float(
-		v_logicalCoord.x >= 0.0 &&
-		v_logicalCoord.y >= 0.0 &&
-		v_logicalCoord.x <= 1.0 &&
-		v_logicalCoord.y <= 1.0
+		v_texCoord.x >= 0.0 &&
+		v_texCoord.y >= 0.0 &&
+		v_texCoord.x <= 1.0 &&
+		v_texCoord.y <= 1.0
 	);
 	#endif
 
