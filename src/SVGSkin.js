@@ -44,11 +44,18 @@ class SVGSkin extends Skin {
         /** @type {Array<WebGLTexture>} */
         this._scaledMIPs = [];
 
-        /** @type {Array<number>} */
-        this._nativeSize = [0, 0];
+        /**
+         * The "native" size, in terms of "stage pixels", of this skin.
+         * @type {Array<number>}
+         */
+        this.nativeSize = [0, 0];
 
-        /** @type {Array<number>} */
-        this._quadSize = [0, 0];
+        /**
+         * The size of this skin's actual texture, aka the dimensions of the actual rendered
+         * quadrilateral at 1x scale, in "stage pixels". To properly handle positioning of vector sprites' viewboxes,
+         * some "slack space" is added to this size, but not to the nativeSize.
+         * @type {Array<number>} */
+        this.quadSize = [0, 0];
 
         /** @type {Array<number>} */
         this._quadRotationCenter = [0, 0];
@@ -69,22 +76,6 @@ class SVGSkin extends Skin {
     dispose () {
         this.resetMIPs();
         super.dispose();
-    }
-
-    /**
-     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
-     */
-    get nativeSize () {
-        return this._nativeSize;
-    }
-
-    /**
-     * @return {Array<number>} the size of this skin's actual texture, aka the dimensions of the actual rendered
-     * quadrilateral at 1x scale, in "stage pixels". To properly handle positioning of vector sprite's viewboxes,
-     * some "slack space" is added to this size, but not to the nativeSize.
-     */
-    get quadSize () {
-        return this._quadSize;
     }
 
     get quadRotationCenter () {
@@ -126,7 +117,7 @@ class SVGSkin extends Skin {
      * @return {SVGMIP} An object that handles creating and updating SVG textures.
      */
     createMIP (scale) {
-        const [width, height] = this._quadSize;
+        const [width, height] = this.quadSize;
         this._canvas.width = width * scale;
         this._canvas.height = height * scale;
         this._context.clearRect(0, 0, this._canvas.width, this._canvas.height);
@@ -238,7 +229,7 @@ class SVGSkin extends Skin {
             scaledSize[1] / MIN_TEXTURE_SCALE
         ];
 
-        this._quadSize = adjustedSize;
+        this.quadSize = adjustedSize;
 
         const xOffset = ((1 - centerFrac[0]) / MIN_TEXTURE_SCALE);
         const yOffset = ((1 - centerFrac[1]) / MIN_TEXTURE_SCALE);
@@ -297,8 +288,8 @@ class SVGSkin extends Skin {
         // drawables using this skin to update, until the image is loaded.
         // We need to do this because the VM reads the skin's `size` directly after calling `setSVG`.
         // TODO: return a Promise so that the VM can read the skin's `size` after the image is loaded.
-        this._nativeSize[0] = width;
-        this._nativeSize[1] = height;
+        this.nativeSize[0] = width;
+        this.nativeSize[1] = height;
         if (typeof rotationCenter === 'undefined') rotationCenter = this._calculateRotationCenter();
         this._nativeRotationCenter[0] = rotationCenter[0];
         this._nativeRotationCenter[1] = rotationCenter[1];

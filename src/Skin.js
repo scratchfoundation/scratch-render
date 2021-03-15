@@ -20,6 +20,22 @@ class Skin extends EventEmitter {
         /** @type {Vec3} */
         this._nativeRotationCenter = twgl.v3.create(0, 0);
 
+        /**
+         * The "native" size, in terms of "stage pixels", of this skin.
+         * @member nativeSize
+         * @abstract
+         * @type {Array<number>}
+         */
+
+        /**
+         * The size of this skin's actual texture, aka the dimensions of the actual rendered
+         * quadrilateral at 1x scale, in "stage pixels". To properly handle positioning of vector sprites' viewboxes,
+         * some "slack space" is added to this size, but not to the nativeSize.
+         * @member quadSize
+         * @abstract
+         * @type {Array<number>}
+         */
+
         /** @type {WebGLTexture} */
         this._texture = null;
 
@@ -87,25 +103,6 @@ class Skin extends EventEmitter {
      */
     get quadRotationCenter () {
         return this._nativeRotationCenter;
-    }
-
-    /**
-     * @abstract
-     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
-     */
-    get nativeSize () {
-        return [0, 0];
-    }
-
-    /**
-     * @abstract
-     * @return {Array<number>} the size of this skin's actual texture, aka the dimensions of the actual rendered
-     * quadrilateral at 1x scale, in "stage pixels". To properly handle positioning of vector sprite's viewboxes,
-     * some "slack space" is added to this size, but not to the nativeSize.
-     */
-    get quadSize () {
-        // TODO: is it significantly expensive to go through two nested getters for every non-vector sprite?
-        return this.nativeSize;
     }
 
     /**

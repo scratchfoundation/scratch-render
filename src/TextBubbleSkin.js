@@ -42,8 +42,18 @@ class TextBubbleSkin extends Skin {
         /** @type {HTMLCanvasElement} */
         this._canvas = document.createElement('canvas');
 
-        /** @type {Array<number>} */
-        this._size = [0, 0];
+        /**
+         * The "native" size, in terms of "stage pixels", of this skin.
+         * @type {Array<number>}
+         */
+        this.nativeSize = [0, 0];
+
+        /**
+         * The size of this skin's actual texture, aka the dimensions of the actual rendered
+         * quadrilateral at 1x scale, in "stage pixels".
+         * @type {Array<number>}
+         */
+        this.quadSize = this.nativeSize;
 
         /** @type {number} */
         this._renderedScale = 0;
@@ -79,13 +89,6 @@ class TextBubbleSkin extends Skin {
         }
         this._canvas = null;
         super.dispose();
-    }
-
-    /**
-     * @return {Array<number>} the "native" size, in terms of "stage pixels", of this skin.
-     */
-    get nativeSize () {
-        return this._size;
     }
 
     /**
@@ -130,8 +133,10 @@ class TextBubbleSkin extends Skin {
         this._textAreaSize.width = paddedWidth;
         this._textAreaSize.height = paddedHeight;
 
-        this._size[0] = paddedWidth + BubbleStyle.STROKE_WIDTH;
-        this._size[1] = paddedHeight + BubbleStyle.STROKE_WIDTH + BubbleStyle.TAIL_HEIGHT;
+        // Because we assigned this.quadSize to this.nativeSize, set this.nativeSize's items instead of reassigning the
+        // reference
+        this.nativeSize[0] = paddedWidth + BubbleStyle.STROKE_WIDTH;
+        this.nativeSize[1] = paddedHeight + BubbleStyle.STROKE_WIDTH + BubbleStyle.TAIL_HEIGHT;
     }
 
     /**
@@ -146,8 +151,8 @@ class TextBubbleSkin extends Skin {
         const paddedHeight = this._textAreaSize.height;
 
         // Resize the canvas to the correct screen-space size
-        this._canvas.width = Math.ceil(this._size[0] * scale);
-        this._canvas.height = Math.ceil(this._size[1] * scale);
+        this._canvas.width = Math.ceil(this.nativeSize[0] * scale);
+        this._canvas.height = Math.ceil(this.nativeSize[1] * scale);
         this._restyleCanvas();
 
         // Reset the transform before clearing to ensure 100% clearage
