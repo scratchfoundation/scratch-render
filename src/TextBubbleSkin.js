@@ -260,9 +260,6 @@ class TextBubbleSkin extends Skin {
             this._renderTextBubble(requestedScale);
             this._textureDirty = false;
 
-            const context = this._canvas.getContext('2d');
-            const textureData = context.getImageData(0, 0, this._canvas.width, this._canvas.height);
-
             const gl = this._renderer.gl;
 
             if (this._texture === null) {
@@ -274,7 +271,7 @@ class TextBubbleSkin extends Skin {
                 this._texture = twgl.createTexture(gl, textureOptions);
             }
 
-            this._setTexture(textureData);
+            this._setTexture(this._canvas);
         }
 
         return this._texture;

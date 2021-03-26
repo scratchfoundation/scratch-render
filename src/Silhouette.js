@@ -134,9 +134,14 @@ class Silhouette {
             imageData = bitmapData;
             this._width = bitmapData.width;
             this._height = bitmapData.height;
+        } else if (bitmapData instanceof HTMLCanvasElement) {
+            // If passed a <canvas>, grab its image data.
+            const ctx = bitmapData.getContext('2d');
+            imageData = ctx.getImageData(0, 0, bitmapData.width, bitmapData.height);
+            this._width = bitmapData.width;
+            this._height = bitmapData.height;
         } else {
-            // Draw about anything else to our update canvas and poll image data
-            // from that.
+            // Draw about anything else to our update canvas and poll image data from that.
             const canvas = Silhouette._updateCanvas();
             const width = this._width = canvas.width = bitmapData.width;
             const height = this._height = canvas.height = bitmapData.height;
