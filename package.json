@@ -38,7 +38,7 @@
     "json": "^9.0.4",
     "playwright-chromium": "^1.0.1",
     "scratch-vm": "0.2.0-prerelease.20201125065300",
-    "tap": "^11.0.0",
+    "tap": "^15.0.8",
     "travis-after-all": "^1.4.4",
     "uglifyjs-webpack-plugin": "^1.2.5",
     "webpack": "^4.8.0",
