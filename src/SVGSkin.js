@@ -309,6 +309,9 @@ class SVGSkin extends Skin {
 
             this.resetMIPs();
             this._svgImageLoaded = true;
+            // While we're setting the size and rotation center before the image is loaded, this doesn't cause the skin
+            // to appear in the wrong place/with the wrong size for a few frames while the new image is loading, because
+            // we don't emit this event, telling drawables using this skin to update, until the image is loaded.
             this.emit(Skin.Events.WasAltered);
         };
 
