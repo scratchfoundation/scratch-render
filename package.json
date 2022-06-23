@@ -29,7 +29,7 @@
     "babel-loader": "7.1.5",
     "babel-polyfill": "6.26.0",
     "babel-preset-env": "1.7.0",
-    "copy-webpack-plugin": "4.6.0",
+    "copy-webpack-plugin": "11.0.0",
     "docdash": "0.4.0",
     "eslint": "7.31.0",
     "eslint-config-scratch": "6.0.0",
