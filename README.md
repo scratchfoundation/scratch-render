@@ -1,16 +1,17 @@
-## scratch-render
-#### WebGL-based rendering engine for Scratch 3.0
+# scratch-render
 
-[![CircleCI](https://circleci.com/gh/LLK/scratch-render/tree/develop.svg?style=shield&circle-token=310da166a745295d515b3b90f3bad10f23b84405)](https://circleci.com/gh/LLK/scratch-render?branch=develop)
+WebGL-based rendering engine for Scratch 3.0
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/LLK/scratch-render.svg)](https://greenkeeper.io/)
+[![CI/CD](https://github.com/scratchfoundation/scratch-render/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/scratchfoundation/scratch-render/actions/workflows/ci-cd.yml)
 
 ## Installation
+
 ```bash
-npm install https://github.com/LLK/scratch-render.git
+npm install https://github.com/scratchfoundation/scratch-render.git
 ```
 
 ## Setup
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -49,6 +50,7 @@ renderer.connectWorker(worker);
 ```
 
 ## Standalone Build
+
 ```bash
 npm run build
 ```
@@ -62,9 +64,13 @@ npm run build
 ```
 
 ## Testing
+
 ```bash
 npm test
 ```
 
 ## Donate
-We provide [Scratch](https://scratch.mit.edu) free of charge, and want to keep it that way! Please consider making a [donation](https://secure.donationpay.org/scratchfoundation/) to support our continued engineering, design, community, and resource development efforts. Donations of any size are appreciated. Thank you!
+
+We provide [Scratch](https://scratch.mit.edu) free of charge, and want to keep it that way! Please consider making a
+[donation](https://secure.donationpay.org/scratchfoundation/) to support our continued engineering, design, community,
+and resource development efforts. Donations of any size are appreciated. Thank you!
