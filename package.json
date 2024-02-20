@@ -40,7 +40,7 @@
     "gh-pages": "1.2.0",
     "husky": "8.0.3",
     "jsdoc": "3.6.7",
-    "json": "9.0.6",
+    "json": "10.0.0",
     "playwright-chromium": "1.13.0",
     "scratch-render-fonts": "1.0.0-prerelease.20231017225105",
     "scratch-semantic-release-config": "1.0.8",
