@@ -66,7 +66,7 @@
     "html-webpack-plugin": "5.6.0",
     "husky": "8.0.3",
     "jsdoc": "3.6.11",
-    "json": "9.0.6",
+    "json": "10.0.0",
     "playwright-chromium": "1.45.3",
     "scratch-render-fonts": "1.0.79",
     "scratch-semantic-release-config": "1.0.14",
