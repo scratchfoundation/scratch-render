@@ -70,7 +70,7 @@
     "playwright-chromium": "1.47.2",
     "scratch-render-fonts": "1.0.111",
     "scratch-semantic-release-config": "1.0.16",
-    "scratch-storage": "2.3.276",
+    "scratch-storage": "2.3.277",
     "scratch-vm": "4.8.30",
     "scratch-webpack-configuration": "1.6.0",
     "semantic-release": "19.0.5",
