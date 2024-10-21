@@ -751,7 +751,7 @@ class RenderWebGL extends EventEmitter {
      */
     getSkinSize (skinID) {
         const skin = this._allSkins[skinID];
-        return skin.size;
+        return skin.nativeSize;
     }
 
     /**
@@ -761,7 +761,7 @@ class RenderWebGL extends EventEmitter {
      */
     getSkinRotationCenter (skinID) {
         const skin = this._allSkins[skinID];
-        return skin.calculateRotationCenter();
+        return skin.nativeRotationCenter;
     }
 
     /**
@@ -1829,7 +1829,7 @@ class RenderWebGL extends EventEmitter {
     _getConvexHullPointsForDrawable (drawableID) {
         const drawable = this._allDrawables[drawableID];
 
-        const [width, height] = drawable.skin.size;
+        const [width, height] = drawable.skin.quadSize;
         // No points in the hull if invisible or size is 0.
         if (!drawable.getVisible() || width === 0 || height === 0) {
             return [];
@@ -1885,7 +1885,7 @@ class RenderWebGL extends EventEmitter {
             for (; x < width; x++) {
                 _pixelPos[0] = x / width;
                 EffectTransform.transformPoint(drawable, _pixelPos, _effectPos);
-                if (drawable.skin.isTouchingLinear(_effectPos)) {
+                if (drawable.skin.pointInsideLogicalBounds(_pixelPos) && drawable.skin.isTouchingLinear(_effectPos)) {
                     currentPoint = [x, y];
                     break;
                 }
@@ -1922,7 +1922,7 @@ class RenderWebGL extends EventEmitter {
             for (x = width - 1; x >= 0; x--) {
                 _pixelPos[0] = x / width;
                 EffectTransform.transformPoint(drawable, _pixelPos, _effectPos);
-                if (drawable.skin.isTouchingLinear(_effectPos)) {
+                if (drawable.skin.pointInsideLogicalBounds(_pixelPos) && drawable.skin.isTouchingLinear(_effectPos)) {
                     currentPoint = [x, y];
                     break;
                 }
