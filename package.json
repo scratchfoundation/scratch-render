@@ -3,7 +3,7 @@
   "version": "1.2.126",
   "description": "WebGL Renderer for Scratch 3.0",
   "author": "Massachusetts Institute of Technology",
-  "license": "BSD-3-Clause",
+  "license": "AGPL-3.0-only",
   "homepage": "https://github.com/scratchfoundation/scratch-render#readme",
   "repository": {
     "type": "git",
