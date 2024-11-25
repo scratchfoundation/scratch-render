@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0](https://github.com/scratchfoundation/scratch-render/compare/v1.2.126...v2.0.0) (2024-11-25)
+
+
+* chore!: set license to AGPL-3.0-only ([27efa60](https://github.com/scratchfoundation/scratch-render/commit/27efa6029e8f60e10f4dc8b4f164861d95b6656a))
+
+
+### BREAKING CHANGES
+
+* This project is now licensed under the AGPL version 3.0
+
+See https://www.scratchfoundation.org/open-source-license
+
 ## [1.2.126](https://github.com/scratchfoundation/scratch-render/compare/v1.2.125...v1.2.126) (2024-11-25)
 
 
