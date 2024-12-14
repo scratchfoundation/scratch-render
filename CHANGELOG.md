@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.42](https://github.com/scratchfoundation/scratch-render/compare/v2.0.41...v2.0.42) (2024-12-14)
+
+
+### Bug Fixes
+
+* **deps:** lock file maintenance ([c42075f](https://github.com/scratchfoundation/scratch-render/commit/c42075f39b7acd05398cc545209f529585480ec6))
+* **deps:** update dependency scratch-render-fonts to v1.0.140 ([9332b10](https://github.com/scratchfoundation/scratch-render/commit/9332b101331de6918d21f3496b0d5bbbb0bdf3fc))
+
 ## [2.0.41](https://github.com/scratchfoundation/scratch-render/compare/v2.0.40...v2.0.41) (2024-12-14)
 
 
