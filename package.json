@@ -74,7 +74,7 @@
     "scratch-vm": "5.0.169",
     "scratch-webpack-configuration": "3.0.0",
     "semantic-release": "19.0.5",
-    "tap": "11.1.5",
+    "tap": "21.0.2",
     "terser-webpack-plugin": "5.3.11",
     "travis-after-all": "1.4.5",
     "webpack": "5.97.1",
