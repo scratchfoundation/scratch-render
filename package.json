@@ -71,7 +71,7 @@
     "scratch-render-fonts": "1.0.190",
     "scratch-semantic-release-config": "3.0.0",
     "scratch-storage": "4.0.128",
-    "scratch-vm": "5.0.297",
+    "scratch-vm": "5.0.300",
     "scratch-webpack-configuration": "3.0.0",
     "semantic-release": "19.0.5",
     "tap": "11.1.5",
