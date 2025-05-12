@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.352](https://github.com/scratchfoundation/scratch-render/compare/v2.0.351...v2.0.352) (2025-05-12)
+
+
+### Bug Fixes
+
+* **deps:** lock file maintenance ([9b5b44b](https://github.com/scratchfoundation/scratch-render/commit/9b5b44b40cb65d692add0d063fe29be92d265dd1))
+
 ## [2.0.351](https://github.com/scratchfoundation/scratch-render/compare/v2.0.350...v2.0.351) (2025-05-11)
 
 
