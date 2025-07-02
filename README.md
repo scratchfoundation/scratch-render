@@ -1,9 +1,27 @@
 ## scratch-render
+
+## **⚠️ NOTICE: Repository Migration to Mono-Repo ⚠️**
+
+The Scratch Team has migrated the `scratch-render` module into a new mono-repo,
+[`scratch-editor`](https://github.com/scratchfoundation/scratch-editor). This independent `scratch-render` repository
+**will be archived**. Any new issues or pull requests should be opened in the mono-repo.
+
+The new mono-repo version of `scratch-render` is published to the NPM registry as
+[`@scratch/scratch-render`](https://www.npmjs.com/package/@scratch/scratch-render).
+
+**Contributors:**
+
+* I would like to thank all past contributors for their work on this repository.
+* If you are aware of valuable issues or pull requests, please consider re-opening them in the mono-repo. If you do
+  so, please link the new issue or pull request to the original one in this repository to help others find it and to
+  reduce the chance of duplicate work.
+* We apologize for the inconvenience and greatly appreciate your help with this transition!
+
+For more information, see the [`scratch-editor` repository on GitHub](https://github.com/scratchfoundation/scratch-editor).
+
+## Overview
+
 #### WebGL-based rendering engine for Scratch 3.0
-
-[![CircleCI](https://circleci.com/gh/LLK/scratch-render/tree/develop.svg?style=shield&circle-token=310da166a745295d515b3b90f3bad10f23b84405)](https://circleci.com/gh/LLK/scratch-render?branch=develop)
-
-[![Greenkeeper badge](https://badges.greenkeeper.io/LLK/scratch-render.svg)](https://greenkeeper.io/)
 
 ## Installation
 ```bash
