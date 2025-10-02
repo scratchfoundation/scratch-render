@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.1.0](https://github.com/scratchfoundation/scratch-render/compare/v2.0.621...v2.1.0) (2025-10-02)
+
+
+### Features
+
+* **deps:** update dependency scratch-webpack-configuration to v3.1.0 ([d63f144](https://github.com/scratchfoundation/scratch-render/commit/d63f1447ff3d3051662e22612be035da595ab77f))
+
 ## [2.0.621](https://github.com/scratchfoundation/scratch-render/compare/v2.0.620...v2.0.621) (2025-09-30)
 
 
