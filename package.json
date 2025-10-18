@@ -1,6 +1,6 @@
 {
   "name": "scratch-render",
-  "version": "2.2.38",
+  "version": "2.2.39",
   "description": "WebGL Renderer for Scratch 3.0",
   "author": "Massachusetts Institute of Technology",
   "license": "AGPL-3.0-only",
@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/scratchfoundation/scratch-render.git",
-    "sha": "962aba5505371ef2d6df30bd50096f6ed202b2ab"
+    "sha": "4845e52bf74db88aacb3a9731ffb593b6079dbd8"
   },
   "exports": {
     "webpack": "./src/index.js",
