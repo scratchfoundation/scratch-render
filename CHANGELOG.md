@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.2.83](https://github.com/scratchfoundation/scratch-render/compare/v2.2.82...v2.2.83) (2026-04-03)
+
+
+### Bug Fixes
+
+* **deps:** pin dependencies ([b731c90](https://github.com/scratchfoundation/scratch-render/commit/b731c90f727dbdc7ab031faa0af008b728fdbca0))
+
 ## [2.2.82](https://github.com/scratchfoundation/scratch-render/compare/v2.2.81...v2.2.82) (2026-03-03)
 
 
