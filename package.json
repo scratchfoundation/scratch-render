@@ -44,7 +44,7 @@
     "linebreak": "^0.3.0",
     "minilog": "^3.1.0",
     "raw-loader": "^0.5.1",
-    "scratch-svg-renderer": "3.1.17",
+    "scratch-svg-renderer": "3.1.19",
     "twgl.js": "^4.4.0"
   },
   "peerDependencies": {
