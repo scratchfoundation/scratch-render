@@ -58,7 +58,8 @@ class BitmapSkin extends Skin {
      * @fires Skin.event:WasAltered
      */
     setBitmap (bitmapData, costumeResolution, rotationCenter) {
-        if (!bitmapData.width || !bitmapData.height) {
+        const [width, height] = BitmapSkin._getBitmapSize(bitmapData);
+        if (!width || !height) {
             super.setEmptyImageData();
             return;
         }
