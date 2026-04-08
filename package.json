@@ -78,7 +78,7 @@
     "terser-webpack-plugin": "5.4.0",
     "travis-after-all": "1.4.5",
     "webpack": "5.105.4",
-    "webpack-cli": "5.1.4",
+    "webpack-cli": "7.0.0",
     "webpack-dev-server": "5.2.3"
   },
   "config": {
