@@ -206,9 +206,11 @@ class TextBubbleSkin extends Skin {
             // and two circles detached from it
             ctx.moveTo(-7, 7.25);
             ctx.arc(-9.25, 7.25, 2.25, 0, Math.PI * 2);
+            ctx.closePath();
 
             ctx.moveTo(0, 9.5);
             ctx.arc(-1.5, 9.5, 1.5, 0, Math.PI * 2);
+            ctx.closePath();
         }
 
         // Un-translate the canvas and fill + stroke the text bubble
