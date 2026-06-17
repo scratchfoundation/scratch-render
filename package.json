@@ -57,7 +57,7 @@
     "@babel/preset-env": "7.29.7",
     "@commitlint/cli": "18.6.1",
     "@commitlint/config-conventional": "18.6.3",
-    "babel-loader": "9.2.1",
+    "babel-loader": "10.0.0",
     "copy-webpack-plugin": "4.6.0",
     "docdash": "0.4.0",
     "eslint": "8.57.1",
